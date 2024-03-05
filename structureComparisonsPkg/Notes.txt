@@ -1,0 +1,98 @@
+all_nbrs = reduced_struct.get_all_neighbors(Rmax)
+
+
+
+168         all_nbrs = reduced_struct.get_all_neighbors(Rmax, sites=[
+169             reduced_struct.sites[index] for index in AInCellIndexes])
+
+Calculating As-Te partial RDF.
+site 0 of type Te has 25 neighbors: 9 As and 16 Te
+site 1 of type Te has 25 neighbors: 9 As and 16 Te
+site 2 of type Te has 25 neighbors: 9 As and 16 Te
+site 3 of type Te has 25 neighbors: 9 As and 16 Te
+site 4 of type Te has 25 neighbors: 9 As and 16 Te
+site 5 of type Te has 25 neighbors: 9 As and 16 Te
+Calculating As-As partial RDF.
+site 0 of type As has 9 neighbors: 9 As and 0 As
+site 1 of type As has 9 neighbors: 9 As and 0 As
+site 2 of type As has 9 neighbors: 9 As and 0 As
+site 3 of type As has 9 neighbors: 9 As and 0 As
+site 4 of type As has 9 neighbors: 9 As and 0 As
+site 5 of type As has 9 neighbors: 9 As and 0 As
+Calculating Te-Te partial RDF.
+site 0 of type Te has 18 neighbors: 18 Te and 0 Te
+site 1 of type Te has 18 neighbors: 18 Te and 0 Te
+site 2 of type Te has 18 neighbors: 18 Te and 0 Te
+site 3 of type Te has 18 neighbors: 18 Te and 0 Te
+site 4 of type Te has 18 neighbors: 18 Te and 0 Te
+site 5 of type Te has 18 neighbors: 18 Te and 0 Te
+site 6 of type Te has 18 neighbors: 18 Te and 0 Te
+site 7 of type Te has 18 neighbors: 18 Te and 0 Te
+site 8 of type Te has 18 neighbors: 18 Te and 0 Te
+
+
+************************************
+calculate_partial_RDF_new()
+************************************
+Calculating As-Te partial RDF.
+Execution of function calculate_partial_RDF for As-Te took 3.519 ms.
+Calculations of reduced_struct took 0.145 ms.
+Calculations of get_neighbors took 1.823 ms.
+Calculations of R_ij took 0.195 ms.
+Calculations of R_ij_tab took 0.305 ms.
+Calculations of R_tab took 0.200 ms.
+Calculations of delta_ij took 0.111 ms.
+Calculations of g_AB_ij took 0.525 ms.
+Calculations of g_AB took 0.184 ms.
+Calculating As-As partial RDF.
+Execution of function calculate_partial_RDF for As-As took 4.608 ms.
+Calculations of reduced_struct took 0.663 ms.
+Calculations of get_neighbors took 2.506 ms.
+Calculations of R_ij took 0.076 ms.
+Calculations of R_ij_tab took 0.127 ms.
+Calculations of R_tab took 0.188 ms.
+Calculations of delta_ij took 0.084 ms.
+Calculations of g_AB_ij took 0.364 ms.
+Calculations of g_AB took 0.252 ms.
+Calculating Te-Te partial RDF.
+Execution of function calculate_partial_RDF for Te-Te took 5.665 ms.
+Calculations of reduced_struct took 0.646 ms.
+Calculations of get_neighbors took 2.413 ms.
+Calculations of R_ij took 0.111 ms.
+Calculations of R_ij_tab took 0.342 ms.
+Calculations of R_tab took 0.331 ms.
+Calculations of delta_ij took 0.174 ms.
+Calculations of g_AB_ij took 0.898 ms.
+Calculations of g_AB took 0.296 ms.
+
+************************************
+calculate_partial_RDF()
+************************************
+Execution of function calculate_partial_RDF for As-Te took 4.143 ms.
+Calculations of reduced_struct took 0.160 ms.
+Calculations of get_neighbors took 4.349 ms.
+Calculations of R_ij took 0.337 ms.
+Calculations of R_ij_tab took 0.186 ms.
+Calculations of R_tab took 0.108 ms.
+Calculations of delta_ij took 0.512 ms.
+Calculations of g_AB_ij took 0.177 ms.
+Calculations of g_AB took 0.087 ms.
+Execution of function calculate_partial_RDF for As-As took 5.506 ms.
+Calculations of reduced_struct took 0.851 ms.
+Calculations of get_neighbors took 9.172 ms.
+Calculations of R_ij took 0.345 ms.
+Calculations of R_ij_tab took 0.170 ms.
+Calculations of R_tab took 0.083 ms.
+Calculations of delta_ij took 0.353 ms.
+Calculations of g_AB_ij took 0.122 ms.
+Calculations of g_AB took 0.088 ms.
+Execution of function calculate_partial_RDF for Te-Te took 8.864 ms.
+Calculations of reduced_struct took 1.544 ms.
+Calculations of get_neighbors took 18.577 ms.
+Calculations of R_ij took 2.642 ms.
+Calculations of R_ij_tab took 0.339 ms.
+Calculations of R_tab took 0.181 ms.
+Calculations of delta_ij took 0.902 ms.
+Calculations of g_AB_ij took 0.278 ms.
+Calculations of g_AB took 0.159 ms.
+

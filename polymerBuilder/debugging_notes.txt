@@ -1,0 +1,68 @@
+**************************************
+seed = 113:  polymerBuilder.py.save.2022-01-17_04
+**************************************
+Starting iteration number 3.
+sites_not_yet_treated =  [3, 4, 5, 6, 7]
+Picked coord number for N atom: 3.
+Current site[3] : N with coordination number 3.
+List of neighbors within 2.42 Å of site 3 (N):
+[ 3.017379    2.89525516 12.20986739] Si at <bound method PeriodicSite.distance of PeriodicSite: Si (3.0174, 2.8953, 12.2099) [0.1509, 0.1448, 0.6105]> Å.
+Point A: site 0 : Si at position [ 3.017379    2.89525516 12.20986739]
+List of neighbors within 2.42 Å of site 3 (N) updated:
+[ 3.017379    2.89525516 12.20986739] Si at <bound method PeriodicSite.distance of PeriodicSite: Si (3.0174, 2.8953, 12.2099) [0.1509, 0.1448, 0.6105]> Å.
+Picked type index for neighbor of C atom: N.
+OB distance set to C-N bond length: 1.47 Å.
+Solutions for atom B (type C) positions: [(1.50964640475170, 0.863630688331631, 11.0287050578102), (2.26424890475625, 2.77389030505233, 9.52398473040286)]
+Trying to insert B atom of type C at position [ 1.5096464   0.86363069 11.02870506].
+Site 8:C added at position [ 1.5096464   0.86363069 11.02870506].
+List of neighbors within 2.42 Å of site 3 (N) updated:
+[ 1.5096464   0.86363069 11.02870506] C at <bound method PeriodicSite.distance of PeriodicSite: C (1.5096, 0.8636, 11.0287) [0.0755, 0.0432, 0.5514]> Å.
+[ 3.017379    2.89525516 12.20986739] Si at <bound method PeriodicSite.distance of PeriodicSite: Si (3.0174, 2.8953, 12.2099) [0.1509, 0.1448, 0.6105]> Å.
+Picked type index for neighbor of C atom: N.
+2 possible solutions found for atom C of type C around site 3 (N)
+Traceback (most recent call last):
+  File "polymerBuilder.py", line 533, in <module>
+    struct = build_current_site_shell(struct, current_site_index, current_site_CN,
+  File "polymerBuilder.py", line 293, in build_current_site_shell
+    X_C_try = X_O + np.asarray(solutions[index], dtype=float)
+  File "/usr/local/miniconda/envs/aiida/lib/python3.8/site-packages/numpy/core/_asarray.py", line 102, in asarray
+    return array(a, dtype, copy=False, order=order)
+  File "/usr/local/miniconda/envs/aiida/lib/python3.8/site-packages/sympy/core/expr.py", line 358, in __float__
+    raise TypeError("can't convert complex to float")
+TypeError: can't convert complex to float
+
+
+
+
+**************************************
+seed = 950: polymerBuilder.py.save.2022-01-17_02
+**************************************
+ERROR REPORT : 
+sites_not_yet_treated =  [2, 3, 4, 5]
+Picked coord number for N atom: 3.
+Current site[2] : N with coordination number 3.
+type(X_O) =  <class 'numpy.ndarray'>
+Traceback (most recent call last):
+  File "polymerBuilder.py", line 389, in <module>
+    struct = build_current_site_shell(struct, current_site_index, current_site_CN,
+  File "polymerBuilder.py", line 99, in build_current_site_shell
+    existing_neighbors = struct.get_neighbors(struct.sites[index_O],
+  File "/usr/local/miniconda/envs/aiida/lib/python3.8/site-packages/pymatgen/core/structure.py", line 1256, in get_neighbors
+    return self.get_all_neighbors(
+  File "/usr/local/miniconda/envs/aiida/lib/python3.8/site-packages/pymatgen/core/structure.py", line 1482, in get_all_neighbors
+    or (not np.allclose(psite.coords, csite.coords, atol=atol))
+  File "<__array_function__ internals>", line 5, in allclose
+  File "/usr/local/miniconda/envs/aiida/lib/python3.8/site-packages/numpy/core/numeric.py", line 2256, in allclose
+    res = all(isclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan))
+  File "<__array_function__ internals>", line 5, in isclose
+  File "/usr/local/miniconda/envs/aiida/lib/python3.8/site-packages/numpy/core/numeric.py", line 2362, in isclose
+    xfin = isfinite(x)
+TypeError: ufunc 'isfinite' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+**************************************
+
+
+
+seed = 113
+
+
+

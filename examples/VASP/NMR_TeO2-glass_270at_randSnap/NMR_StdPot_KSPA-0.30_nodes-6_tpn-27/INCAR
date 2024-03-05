@@ -1,0 +1,32 @@
+ SYSTEM       = TeO2-glass, random snaphot of 270 atoms
+ ISTART       = 0
+ ICHARG       = 2
+ INIWAV       = 1
+ ISYM         = 0
+
+ NSW          = 0
+
+ POTIM        = 0.1
+
+ ALGO         = Normal
+ LWAVE        = .TRUE.
+
+ KSPACING     = 0.30    # will produce a 2x2x2 MP grid
+ NCORE        = 1
+
+# NMR-related parameters
+ LEFG         = .TRUE.
+ QUAD_EFG     = -310.0 -25.58
+ PREC         = Normal  # Accurate would be better.
+ ENCUT        = 400     # typically higher cutoffs than usual are needed
+ ISMEAR = 0; SIGMA= 0.2 # no fancy smearings, SIGMA sufficiently small
+ EDIFF        = 1E-7    # Facilitate convergence of shielding calculations
+ NELM         = 100     # leave time for convergence in shielding calc.
+ LCHIMAG      = .TRUE.  # to switch on linear response for chemical shifts
+ DQ           = 0.001   # often the default is sufficient
+ ICHIBARE     = 1       # often the default is sufficient
+ LNMR_SYM_RED = .FALSE. # TEST IN PROGRESS
+ NLSPLINE     = .FALSE. # only needed if LREAL is NOT set.
+ LREAL        = A       # helps for speed for large systems, not needed
+ NBANDS       = 810     # Increases to the closest interger of the number CPUs requested
+

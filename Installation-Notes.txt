@@ -1,0 +1,30 @@
+*********************************
+pymatgen
+*********************************
+Installation  with conda :
+conda install etc.
+
+
+*********************************
+ASE
+*********************************
+Installation with pip using minconda shell prompt
+https://wiki.fysik.dtu.dk/ase/install.html
+
+pip.exe install --upgrade --user ase
+
+Obtain information on ASE and dependencies versions and locations :
+
+ase info
+->
+platform                 Windows-10-10.0.19041-SP0
+python-3.8.3             D:\cadarp02\Miniconda3\python.exe
+ase-3.21.1               C:\Users\cadarp02\AppData\Roaming\Python\Python38\site-packages\ase
+numpy-1.19.4             D:\cadarp02\Miniconda3\lib\site-packages\numpy
+scipy-1.6.0              D:\cadarp02\Miniconda3\lib\site-packages\scipy
+matplotlib-3.3.3         D:\cadarp02\Miniconda3\lib\site-packages\matplotlib
+spglib-1.16.0            D:\cadarp02\Miniconda3\lib\site-packages\spglib
+ase_ext                  not installed
+flask-1.1.2              D:\cadarp02\Miniconda3\lib\site-packages\flask
+psycopg2                 not installed
+

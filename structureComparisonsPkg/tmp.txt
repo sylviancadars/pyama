@@ -1,0 +1,31 @@
+all_nbrs = reduced_struct.get_all_neighbors(Rmax)
+
+
+
+168         all_nbrs = reduced_struct.get_all_neighbors(Rmax, sites=[
+169             reduced_struct.sites[index] for index in AInCellIndexes])
+
+Calculating As-Te partial RDF.
+site 0 of type Te has 25 neighbors: 9 As and 16 Te
+site 1 of type Te has 25 neighbors: 9 As and 16 Te
+site 2 of type Te has 25 neighbors: 9 As and 16 Te
+site 3 of type Te has 25 neighbors: 9 As and 16 Te
+site 4 of type Te has 25 neighbors: 9 As and 16 Te
+site 5 of type Te has 25 neighbors: 9 As and 16 Te
+Calculating As-As partial RDF.
+site 0 of type As has 9 neighbors: 9 As and 0 As
+site 1 of type As has 9 neighbors: 9 As and 0 As
+site 2 of type As has 9 neighbors: 9 As and 0 As
+site 3 of type As has 9 neighbors: 9 As and 0 As
+site 4 of type As has 9 neighbors: 9 As and 0 As
+site 5 of type As has 9 neighbors: 9 As and 0 As
+Calculating Te-Te partial RDF.
+site 0 of type Te has 18 neighbors: 18 Te and 0 Te
+site 1 of type Te has 18 neighbors: 18 Te and 0 Te
+site 2 of type Te has 18 neighbors: 18 Te and 0 Te
+site 3 of type Te has 18 neighbors: 18 Te and 0 Te
+site 4 of type Te has 18 neighbors: 18 Te and 0 Te
+site 5 of type Te has 18 neighbors: 18 Te and 0 Te
+site 6 of type Te has 18 neighbors: 18 Te and 0 Te
+site 7 of type Te has 18 neighbors: 18 Te and 0 Te
+site 8 of type Te has 18 neighbors: 18 Te and 0 Te

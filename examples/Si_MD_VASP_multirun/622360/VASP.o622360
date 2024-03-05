@@ -1,0 +1,3 @@
+Loading vasp/5.4.4-mpi-cuda
+  Loading requirement: intel-compilers/19.0.4 intel-mpi/2019.4
+cp: -r not specified; omitting directory '/gpfsdswork/projects/rech/def/usv73pa/VASP/tests/Si_MD_2022-11-03/622216'

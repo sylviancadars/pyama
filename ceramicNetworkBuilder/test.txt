@@ -1,0 +1,1475 @@
+Running script ceramicNetworkBuilder.py
+
+Initialization of random number generator with seed: 1218
+Starting iteration number 0.
+Picked coord number for C atom: 3.
+Current site[0] : C with coordination number 3.
+Site 2:C added at position [4.54117389 6.31658344 5.62158053].
+Site 3:C added at position [6.53091328 6.3709397  7.39718819].
+Number of neighbors connected to atom 0C match coordination number : 3
+Starting iteration number 1.
+Picked coord number for C atom: 3.
+Current site[1] : C with coordination number 3.
+Site 4:C added at position [6.93552724 5.77472323 3.51226224].
+Site 5:C added at position [7.84821107 4.16270689 5.43143174].
+Number of neighbors connected to atom 1C match coordination number : 3
+Starting iteration number 2.
+Picked coord number for C atom: 3.
+Current site[2] : C with coordination number 3.
+Site 6:C added at position [4.08028913 6.1886687  4.15774206].
+Site 7:C added at position [3.54323254 6.76108167 6.70699952].
+Number of neighbors connected to atom 2C match coordination number : 3
+Starting iteration number 3.
+Picked coord number for C atom: 3.
+Current site[3] : C with coordination number 3.
+Site 8:C added at position [5.62351211 6.21612374 8.63179547].
+Site 9:C added at position [7.96922729 6.89669657 7.55976894].
+Number of neighbors connected to atom 3C match coordination number : 3
+Starting iteration number 4.
+Picked coord number for C atom: 3.
+Current site[4] : C with coordination number 3.
+Site 10:C added at position [6.3709525  4.85582779 2.4129504 ].
+Site 11:C added at position [7.5077165  7.15586514 3.14260499].
+Number of neighbors connected to atom 4C match coordination number : 3
+Starting iteration number 5.
+Picked coord number for C atom: 3.
+Current site[5] : C with coordination number 3.
+Site 12:C added at position [8.83474745 3.52987368 4.43249825].
+Site 13:C added at position [7.78197347 3.64577073 6.88056582].
+Number of neighbors connected to atom 5C match coordination number : 3
+Starting iteration number 6.
+Picked coord number for C atom: 3.
+Current site[6] : C with coordination number 3.
+Site 14:C added at position [3.11665741 5.05879991 3.74980774].
+Site 15:C added at position [4.58303548 7.19062323 3.10183807].
+Number of neighbors connected to atom 6C match coordination number : 3
+Starting iteration number 7.
+Picked coord number for C atom: 3.
+Current site[7] : C with coordination number 3.
+Site 16:C added at position [3.34101079 5.89865822 7.96673448].
+Site 17:C added at position [2.74751299 8.06800338 6.53268359].
+Number of neighbors connected to atom 7C match coordination number : 3
+Starting iteration number 8.
+Picked coord number for C atom: 3.
+Current site[8] : C with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 18:C added at position [5.81557926 5.02075362 9.58353098].
+Site 19:C added at position [4.52404375 7.25667787 8.91466721].
+Number of neighbors connected to atom 8C match coordination number : 3
+Starting iteration number 9.
+Picked coord number for C atom: 3.
+Current site[9] : C with coordination number 3.
+Site 20:C added at position [8.74714    7.40386789 6.33126209].
+Site 21:C added at position [8.62962859 6.91528215 8.95085653].
+Number of neighbors connected to atom 9C match coordination number : 3
+Starting iteration number 10.
+Picked coord number for C atom: 3.
+Current site[10] : C with coordination number 3.
+Site 22:C added at position [4.85668104 4.82963988 2.13385159].
+Site 23:C added at position [7.32064921 3.96312026 1.59273736].
+Number of neighbors connected to atom 10C match coordination number : 3
+Starting iteration number 11.
+Picked coord number for C atom: 4.
+Current site[11] : C with coordination number 4.
+Site 24:C added at position [6.64377398 8.2577562  3.78372853].
+Site 25:C added at position [7.49876833 7.32219191 1.6116395 ].
+Site 26:C added at position [8.95279644 7.2687892  3.66278967].
+Number of neighbors connected to atom 11C match coordination number : 4
+Starting iteration number 12.
+Picked coord number for C atom: 4.
+Current site[12] : C with coordination number 4.
+Site 27:C added at position [8.99134742 4.45381879 3.21045002].
+Site 28:C added at position [10.20364399  3.34148519  5.11237475].
+Site 29:C added at position [8.29578732 2.16148387 3.97573651].
+Number of neighbors connected to atom 12C match coordination number : 4
+Starting iteration number 13.
+Picked coord number for C atom: 3.
+Current site[13] : C with coordination number 3.
+Site 30:C added at position [6.67489822 2.65931009 7.296354  ].
+Site 31:C added at position [8.82281122 4.11529506 7.91391168].
+Number of neighbors connected to atom 13C match coordination number : 3
+Starting iteration number 14.
+Picked coord number for C atom: 4.
+Current site[14] : C with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Site 32:C added at position [2.69955166 5.24582046 2.27921394].
+Site 33:C added at position [3.82069292 3.69912261 3.91476727].
+Site 34:C added at position [1.86609593 5.10158786 4.64750767].
+Number of neighbors connected to atom 14C match coordination number : 4
+Starting iteration number 15.
+Picked coord number for C atom: 3.
+Current site[15] : C with coordination number 3.
+Site 35:N added at position [3.98083056 8.52865241 3.01280354].
+Site 36:C added at position [5.71666316 6.7908329  2.13920836].
+Number of neighbors connected to atom 15C match coordination number : 3
+Starting iteration number 16.
+Picked coord number for C atom: 3.
+Current site[16] : C with coordination number 3.
+Site 37:Si added at position [2.86823313 4.16920986 7.80707967].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 16 (C) has been reached. Switching to another site.
+Starting iteration number 17.
+Picked coord number for C atom: 4.
+Current site[17] : C with coordination number 4.
+Site 38:C added at position [1.23989018 7.76691134 6.62222153].
+Site 39:C added at position [3.06717369 8.68415597 5.15799344].
+Site 40:Si added at position [3.20597832 9.2273216  7.83106365].
+Number of neighbors connected to atom 17C match coordination number : 4
+Starting iteration number 18.
+Picked coord number for C atom: 3.
+Current site[18] : C with coordination number 3.
+Site 41:C added at position [5.59978427 3.58508533 9.0698296 ].
+Site 42:C added at position [ 6.22344233  5.26105173 11.04896762].
+Number of neighbors connected to atom 18C match coordination number : 3
+Starting iteration number 19.
+Picked coord number for C atom: 3.
+Current site[41] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 41 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 41 (C) has been reached. Switching to another site.
+Starting iteration number 20.
+Picked coord number for C atom: 3.
+Current site[33] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 33 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 33 (C) has been reached. Switching to another site.
+Starting iteration number 21.
+Picked coord number for C atom: 3.
+Current site[28] : C with coordination number 3.
+Site 43:N added at position [11.2179885   2.47508627  4.49483275].
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 28 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 28 (C) has been reached. Switching to another site.
+Starting iteration number 22.
+Picked coord number for C atom: 3.
+Current site[21] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 21 (C) has not been inserted.
+Site 44:N added at position [9.0965755  5.66137731 9.55961202].
+No atoms of type C left. 3rd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 21 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 21 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 21 (C) has been reached. Switching to another site.
+Starting iteration number 23.
+Picked coord number for C atom: 3.
+Current site[39] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 39 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 39 (C) has been reached. Switching to another site.
+Starting iteration number 24.
+Picked coord number for C atom: 3.
+Current site[19] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 19 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 19 (C) has been reached. Switching to another site.
+Starting iteration number 25.
+Picked coord number for N atom: 4.
+Current site[44] : N with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 45:Si added at position [10.49420589  5.07369826  8.68567689].
+Site 46:Si added at position [ 9.53205928  5.95050228 11.22971999].
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 44 (N) has been reached. Switching to another site.
+Starting iteration number 26.
+Picked coord number for C atom: 3.
+Current site[36] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 36 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 36 (C) has been reached. Switching to another site.
+Starting iteration number 27.
+Picked coord number for C atom: 3.
+Current site[26] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 26 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 26 (C) has been reached. Switching to another site.
+Starting iteration number 28.
+Picked coord number for C atom: 3.
+Current site[42] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 42 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 42 (C) has been reached. Switching to another site.
+Starting iteration number 29.
+Picked coord number for C atom: 3.
+Current site[30] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 30 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 30 (C) has been reached. Switching to another site.
+Starting iteration number 30.
+Picked coord number for C atom: 3.
+Current site[38] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 38 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 38 (C) has been reached. Switching to another site.
+Starting iteration number 31.
+Picked coord number for C atom: 3.
+Current site[23] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 23 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 23 (C) has been reached. Switching to another site.
+Starting iteration number 32.
+Picked coord number for C atom: 3.
+Current site[32] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 32 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 32 (C) has been reached. Switching to another site.
+Starting iteration number 33.
+Picked coord number for C atom: 3.
+Current site[25] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 25 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 25 (C) has been reached. Switching to another site.
+Starting iteration number 34.
+Picked coord number for C atom: 3.
+Current site[22] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 22 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 22 (C) has been reached. Switching to another site.
+Starting iteration number 35.
+Picked coord number for C atom: 3.
+Current site[27] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 27 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 27 (C) has been reached. Switching to another site.
+Starting iteration number 36.
+Picked coord number for C atom: 3.
+Current site[20] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 20 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 20 (C) has been reached. Switching to another site.
+Starting iteration number 37.
+Picked coord number for N atom: 4.
+Current site[35] : N with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 35 (N) has not been inserted.
+Site 47:Si added at position [2.27067964 8.37727292 2.67373413].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 35 (N) has been reached. Switching to another site.
+Starting iteration number 38.
+Picked coord number for N atom: 4.
+Current site[43] : N with coordination number 4.
+Site 48:Si added at position [10.44509394  1.04965185  3.83659974].
+Site 49:Si added at position [12.39082773  1.99755038  5.70268523].
+Site 50:Si added at position [12.02559683  3.34662931  3.21004424].
+Number of neighbors connected to atom 43N match coordination number : 4
+Starting iteration number 39.
+Picked coord number for C atom: 3.
+Current site[24] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 24 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 24 (C) has been reached. Switching to another site.
+Starting iteration number 40.
+Picked coord number for Si atom: 4.
+Current site[40] : Si with coordination number 4.
+Site 51:N added at position [4.94959051 9.35292845 7.91193053].
+Site 52:N added at position [ 2.52367851 10.79944368  7.47694624].
+Site 53:N added at position [2.59039612 8.65670762 9.36662811].
+Number of neighbors connected to atom 40Si match coordination number : 4
+Starting iteration number 41.
+Picked coord number for N atom: 3.
+Current site[51] : N with coordination number 3.
+Site 54:Si added at position [5.89134598 9.4194084  6.43843908].
+Site 55:Si added at position [5.75144722 9.4120554  9.46628886].
+Number of neighbors connected to atom 51N match coordination number : 3
+Starting iteration number 42.
+Picked coord number for Si atom: 4.
+Current site[54] : Si with coordination number 4.
+Site 56:N added at position [4.85117077 9.10517854 5.06665371].
+Site 57:N added at position [ 6.60804788 11.00756576  6.27536059].
+Site 58:N added at position [7.15657476 8.21196087 6.49981151].
+Number of neighbors connected to atom 54Si match coordination number : 4
+Starting iteration number 43.
+Picked coord number for C atom: 3.
+Current site[34] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 34 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 34 (C) has been reached. Switching to another site.
+Starting iteration number 44.
+Picked coord number for N atom: 4.
+Current site[57] : N with coordination number 4.
+Site 59:Si added at position [ 6.68242136 11.77794857  7.84490795].
+Site 60:Si added at position [ 8.22494497 10.85377095  5.62383089].
+Site 61:Si added at position [ 5.63347921 11.97913511  5.19426445].
+Number of neighbors connected to atom 57N match coordination number : 4
+Starting iteration number 45.
+Picked coord number for C atom: 3.
+Current site[29] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 29 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 29 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 29 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 29 (C) has not been inserted.
+Site 62:N added at position [6.84691747 1.94642094 3.85154269].
+No atoms of type C left. 3rd neighbor of site 29 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 29 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 29 (C) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 29 (C) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 29 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 29 (C) has been reached. Switching to another site.
+Starting iteration number 46.
+Picked coord number for Si atom: 4.
+Current site[59] : Si with coordination number 4.
+Site 63:N added at position [ 5.07144961 11.88217421  8.52048697].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 59 (Si) has been reached. Switching to another site.
+Starting iteration number 47.
+Picked coord number for N atom: 3.
+Current site[63] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Site 64:Si added at position [ 3.97885474 13.14099733  7.98747589].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 63 (N) has been reached. Switching to another site.
+Starting iteration number 48.
+Picked coord number for C atom: 3.
+Current site[31] : C with coordination number 3.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 31 (C) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 31 (C) has been reached. Switching to another site.
+Starting iteration number 49.
+Picked coord number for Si atom: 4.
+Current site[45] : Si with coordination number 4.
+No atoms of type C left. 2nd neighbor of site 45 (Si) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 65:N added at position [11.25816253  3.79255204  9.60084607].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 45 (Si) has been reached. Switching to another site.
+Starting iteration number 50.
+Picked coord number for N atom: 4.
+Current site[62] : N with coordination number 4.
+Site 66:Si added at position [6.00769267 2.93389614 5.02759306].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 62 (N) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 62 (N) has been reached. Switching to another site.
+Starting iteration number 51.
+Picked coord number for Si atom: 4.
+Current site[64] : Si with coordination number 4.
+Site 67:N added at position [ 2.39036172 12.45850163  7.71657086].
+Site 68:N added at position [ 4.57558901 13.83913341  6.49784028].
+Site 69:N added at position [ 3.87801864 14.38418007  9.21500542].
+Number of neighbors connected to atom 64Si match coordination number : 4
+Starting iteration number 52.
+Picked coord number for Si atom: 4.
+Current site[55] : Si with coordination number 4.
+Site 70:N added at position [ 5.82698327  7.80095229 10.14536255].
+Site 71:N added at position [ 7.37375063 10.03580594  9.26240922].
+Site 72:N added at position [ 4.85546447 10.45853491 10.54545313].
+Number of neighbors connected to atom 55Si match coordination number : 4
+Starting iteration number 53.
+Picked coord number for N atom: 3.
+Current site[71] : N with coordination number 3.
+Site 73:Si added at position [8.5858144  9.07187922 8.4473959 ].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 71 (N) has been reached. Switching to another site.
+Starting iteration number 54.
+Picked coord number for N atom: 3.
+Current site[56] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 56 (N) has been reached. Switching to another site.
+Starting iteration number 55.
+Picked coord number for N atom: 3.
+Current site[70] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 74:Si added at position [ 4.43810503  7.13579508 10.97667665].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 70 (N) has been reached. Switching to another site.
+Starting iteration number 56.
+Picked coord number for Si atom: 4.
+Current site[74] : Si with coordination number 4.
+Site 75:N added at position [3.21538454 6.69135151 9.80623891].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 74 (Si) has been reached. Switching to another site.
+Starting iteration number 57.
+Picked coord number for Si atom: 4.
+Current site[73] : Si with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 73 (Si) has been reached. Switching to another site.
+Starting iteration number 58.
+Picked coord number for N atom: 3.
+Current site[65] : N with coordination number 3.
+Site 76:Si added at position [11.09432351  2.12920007  9.082274  ].
+No atoms of type C left. 3rd neighbor of site 65 (N) has not been inserted.
+Site 77:Si added at position [12.1859583   4.1747578  11.03458725].
+Number of neighbors connected to atom 65N match coordination number : 3
+Starting iteration number 59.
+Picked coord number for N atom: 3.
+Current site[53] : N with coordination number 3.
+Site 78:Si added at position [ 2.58990857  9.7180786  10.75802719].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 53 (N) has been reached. Switching to another site.
+Starting iteration number 60.
+Picked coord number for Si atom: 4.
+Current site[78] : Si with coordination number 4.
+Site 79:N added at position [ 2.3389542   8.77524617 12.2108138 ].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 78 (Si) has not been inserted.
+No atoms of type C left. 3rd neighbor of site 78 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 78 (Si) has been reached. Switching to another site.
+Starting iteration number 61.
+Picked coord number for N atom: 3.
+Current site[69] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 69 (N) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 69 (N) has been reached. Switching to another site.
+Starting iteration number 62.
+Picked coord number for Si atom: 4.
+Current site[48] : Si with coordination number 4.
+Site 80:N added at position [11.26708033 -0.3812288   4.41919646].
+Site 81:N added at position [10.52471762  1.09729582  2.08906144].
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+No atoms of type C left. 4th neighbor of site 48 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+No atoms of type C left. 4th neighbor of site 48 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Exiting function build_current_site_shell with no site D added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 48 (Si) has been reached. Switching to another site.
+Starting iteration number 63.
+Picked coord number for N atom: 3.
+Current site[58] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 58 (N) has been reached. Switching to another site.
+Starting iteration number 64.
+Picked coord number for Si atom: 4.
+Current site[47] : Si with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Site 82:N added at position [1.62259075 7.00465498 3.54459623].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 47 (Si) has been reached. Switching to another site.
+Starting iteration number 65.
+Picked coord number for N atom: 3.
+Current site[80] : N with coordination number 3.
+Site 83:Si added at position [11.01238975 -0.92894509  6.06164572].
+Site 84:Si added at position [12.34375745 -1.26439305  3.35934398].
+Number of neighbors connected to atom 80N match coordination number : 3
+Starting iteration number 66.
+Picked coord number for Si atom: 4.
+Current site[37] : Si with coordination number 4.
+Site 85:N added at position [2.28880988 3.87039952 6.18304732].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 37 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 37 (Si) has been reached. Switching to another site.
+Starting iteration number 67.
+Picked coord number for N atom: 3.
+Current site[67] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Site 86:Si added at position [ 1.33768041 12.12600624  9.0744401 ].
+Site 87:Si added at position [ 1.85455001 12.10850131  6.0877966 ].
+Number of neighbors connected to atom 67N match coordination number : 3
+Starting iteration number 68.
+Picked coord number for Si atom: 4.
+Current site[77] : Si with coordination number 4.
+Site 88:N added at position [12.89641043  5.76482248 10.86297117].
+Site 89:N added at position [11.13399085  4.15370262 12.432951  ].
+Site 90:N added at position [13.45526937  2.98795408 11.24158076].
+Number of neighbors connected to atom 77Si match coordination number : 4
+Starting iteration number 69.
+Picked coord number for N atom: 3.
+Current site[85] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 85 (N) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 85 (N) has been reached. Switching to another site.
+Starting iteration number 70.
+Picked coord number for N atom: 3.
+Current site[68] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 91:Si added at position [ 3.53163921 13.9349046   5.09659202].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 68 (N) has been reached. Switching to another site.
+Starting iteration number 71.
+Picked coord number for N atom: 3.
+Current site[81] : N with coordination number 3.
+Site 92:Si added at position [9.30251023 1.95955822 1.18064928].
+Site 93:Si added at position [11.82654864  0.28267731  1.24993529].
+Number of neighbors connected to atom 81N match coordination number : 3
+Starting iteration number 72.
+Picked coord number for Si atom: 4.
+Current site[93] : Si with coordination number 4.
+Site 94:N added at position [11.74847115  0.66258015 -0.4565458 ].
+Site 95:N added at position [11.67080806 -1.44638794  1.47033994].
+Site 96:N added at position [13.36219772  0.81722123  1.8968856 ].
+Number of neighbors connected to atom 93Si match coordination number : 4
+Starting iteration number 73.
+Picked coord number for Si atom: 4.
+Current site[91] : Si with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 97:N added at position [ 3.74403548 12.50381501  4.11202593].
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 91 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 91 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+No atoms of type C left. 3rd neighbor of site 91 (Si) has not been inserted.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 91 (Si) has been reached. Switching to another site.
+Starting iteration number 74.
+Picked coord number for Si atom: 4.
+Current site[61] : Si with coordination number 4.
+Site 98:N added at position [ 4.71359749 10.93086131  4.13717426].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 61 (Si) has been reached. Switching to another site.
+Starting iteration number 75.
+Picked coord number for N atom: 3.
+Current site[75] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 75 (N) has been reached. Switching to another site.
+Starting iteration number 76.
+Picked coord number for Si atom: 4.
+Current site[92] : Si with coordination number 4.
+Site 99:N added at position [7.78083006 1.10228034 1.2904859 ].
+Site 100:N added at position [ 9.7907654   2.06882783 -0.49630243].
+No atoms of type C left. 4th neighbor of site 92 (Si) has not been inserted.
+Site 101:N added at position [9.11372786 3.5698289  1.83935221].
+Number of neighbors connected to atom 92Si match coordination number : 4
+Starting iteration number 77.
+Picked coord number for N atom: 3.
+Current site[100] : N with coordination number 3.
+Site 102:Si added at position [ 8.60716492  2.44374819 -1.72960071].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 100 (N) has been reached. Switching to another site.
+Starting iteration number 78.
+Picked coord number for N atom: 3.
+Current site[98] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 103:Si added at position [ 5.53007174 10.00300726  2.89824058].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 98 (N) has been reached. Switching to another site.
+Starting iteration number 79.
+Picked coord number for N atom: 4.
+Current site[88] : N with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Site 104:Si added at position [13.00855345  6.17346664  9.16505071].
+Site 105:Si added at position [14.49691586  5.76809748 11.57069405].
+Site 106:Si added at position [11.89421414  6.942968   11.68155269].
+Number of neighbors connected to atom 88N match coordination number : 4
+Starting iteration number 80.
+Picked coord number for Si atom: 4.
+Current site[46] : Si with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 46 (Si) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 107:N added at position [ 8.59095754  7.28685764 11.85500542].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 46 (Si) has been reached. Switching to another site.
+Starting iteration number 81.
+Picked coord number for N atom: 3.
+Current site[96] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 96 (N) has not been inserted.
+Site 108:Si added at position [0.76887462 1.21952504 1.91175836].
+Exiting function add_second_neighbor with no site B added.
+Site 109:Si added at position [14.76137859 -0.23009733  1.80790958].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 96 (N) has been reached. Switching to another site.
+Starting iteration number 82.
+Picked coord number for Si atom: 4.
+Current site[76] : Si with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Site 110:N added at position [10.38110361  2.08374815  7.48485373].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 76 (Si) has been reached. Switching to another site.
+Starting iteration number 83.
+Picked coord number for N atom: 4.
+Current site[101] : N with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 101 (N) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 101 (N) has been reached. Switching to another site.
+Starting iteration number 84.
+Picked coord number for Si atom: 4.
+Current site[49] : Si with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 111:N added at position [11.58199802  1.1330019   6.99142508].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 49 (Si) has been reached. Switching to another site.
+Starting iteration number 85.
+Picked coord number for N atom: 3.
+Current site[79] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 79 (N) has not been inserted.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 79 (N) has been reached. Switching to another site.
+Starting iteration number 86.
+Picked coord number for N atom: 3.
+Current site[110] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 112:Si added at position [8.75909469 1.46357555 7.26812121].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 110 (N) has been reached. Switching to another site.
+Starting iteration number 87.
+Picked coord number for N atom: 3.
+Current site[95] : N with coordination number 3.
+Site 113:Si added at position [10.18409933 -2.25487087  1.02474763].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 95 (N) has been reached. Switching to another site.
+Starting iteration number 88.
+Picked coord number for Si atom: 4.
+Current site[102] : Si with coordination number 4.
+Site 114:N added at position [ 8.64425384  4.15966661 -2.07128531].
+Site 115:N added at position [ 7.0129487   1.99602046 -1.16346068].
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type C left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+No atoms of type N left. 4th neighbor of site 102 (Si) has not been inserted.
+Max number of attemps (10) to complete the 4-coordinated shell of site 102 (Si) has been reached. Switching to another site.
+Starting iteration number 89.
+Picked coord number for Si atom: 4.
+Current site[84] : Si with coordination number 4.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 84 (Si) has not been inserted.
+Max number of attemps (10) to complete the 4-coordinated shell of site 84 (Si) has been reached. Switching to another site.
+Starting iteration number 90.
+Picked coord number for N atom: 3.
+Current site[82] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 116:Si added at position [0.30522389 7.22808312 4.67469552].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 82 (N) has been reached. Switching to another site.
+Starting iteration number 91.
+Picked coord number for Si atom: 4.
+Current site[87] : Si with coordination number 4.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 87 (Si) has not been inserted.
+Max number of attemps (10) to complete the 4-coordinated shell of site 87 (Si) has been reached. Switching to another site.
+Starting iteration number 92.
+Picked coord number for Si atom: 4.
+Current site[50] : Si with coordination number 4.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type C left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 50 (Si) has not been inserted.
+Max number of attemps (10) to complete the 4-coordinated shell of site 50 (Si) has been reached. Switching to another site.
+Starting iteration number 93.
+Picked coord number for N atom: 3.
+Current site[52] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 52 (N) has been reached. Switching to another site.
+Starting iteration number 94.
+Picked coord number for Si atom: 4.
+Current site[112] : Si with coordination number 4.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 112 (Si) has not been inserted.
+Max number of attemps (10) to complete the 4-coordinated shell of site 112 (Si) has been reached. Switching to another site.
+Starting iteration number 95.
+Picked coord number for N atom: 4.
+Current site[115] : N with coordination number 4.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 117:Si added at position [ 6.02178112  1.5225884  -2.52579284].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 4-coordinated shell of site 115 (N) has been reached. Switching to another site.
+Starting iteration number 96.
+Picked coord number for Si atom: 4.
+Current site[86] : Si with coordination number 4.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+No atoms of type N left. 2nd neighbor of site 86 (Si) has not been inserted.
+Max number of attemps (10) to complete the 4-coordinated shell of site 86 (Si) has been reached. Switching to another site.
+Starting iteration number 97.
+Picked coord number for N atom: 3.
+Current site[107] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Site 118:Si added at position [ 7.81867848  8.40484464 10.75219532].
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Exiting function build_current_site_shell with no site C added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 107 (N) has been reached. Switching to another site.
+Starting iteration number 98.
+Picked coord number for N atom: 3.
+Current site[72] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Max number of attemps (10) to complete the 3-coordinated shell of site 72 (N) has been reached. Switching to another site.
+Starting iteration number 99.
+Picked coord number for N atom: 3.
+Current site[94] : N with coordination number 3.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+Exiting function add_second_neighbor with no site B added.
+No atoms of type C left. 2nd neighbor of site 94 (N) has not been inserted.
+Site 119:Si added at position [11.10736122 -0.51064447 -1.58571454].
+No atoms of type Si left. 3rd neighbor of site 94 (N) has not been inserted.
+No atoms of type Si left. 3rd neighbor of site 94 (N) has not been inserted.
+No atoms of type Si left. 3rd neighbor of site 94 (N) has not been inserted.
+No atoms of type Si left. 3rd neighbor of site 94 (N) has not been inserted.
+No atoms of type Si left. 3rd neighbor of site 94 (N) has not been inserted.
+Max number of attemps (10) to complete the 3-coordinated shell of site 94 (N) has been reached. Switching to another site.
+
+********************
+Final structure :
+********************
+ Full Formula (Si40 C40 N40)
+Reduced Formula: SiCN
+abc   :  12.000000  12.000000  12.000000
+angles:  90.000000  90.000000  90.000000
+Sites (120)
+  #  SP           a          b          c  connected_neighbors    is_shell_complete    is_treated      target_coord_number    treatment_attempts
+---  ----  --------  ---------  ---------  ---------------------  -------------------  ------------  ---------------------  --------------------
+  0  C     0.5        0.5        0.5       [2, 1, 3]              True                 True                              3                     0
+  1  C     0.577326   0.442706   0.415103  [0, 5, 4]              True                 True                              3                     0
+  2  C     0.378431   0.526382   0.468465  [6, 7, 0]              True                 True                              3                     0
+  3  C     0.544243   0.530912   0.616432  [0, 8, 9]              True                 True                              3                     0
+  4  C     0.577961   0.481227   0.292689  [10, 1, 11]            True                 True                              3                     0
+  5  C     0.654018   0.346892   0.452619  [13, 1, 12]            True                 True                              3                     0
+  6  C     0.340024   0.515722   0.346479  [14, 15, 2]            True                 True                              3                     0
+  7  C     0.295269   0.563423   0.558917  [16, 17, 2]            True                 True                              3                     0
+  8  C     0.468626   0.51801    0.719316  [19, 18, 3]            True                 True                              3                     2
+  9  C     0.664102   0.574725   0.629981  [3, 20, 21]            True                 True                              3                     0
+ 10  C     0.530913   0.404652   0.201079  [22, 23, 4]            True                 True                              3                     0
+ 11  C     0.625643   0.596322   0.261884  [4, 25, 24, 26]        True                 True                              4                     0
+ 12  C     0.736229   0.294156   0.369375  [29, 5, 28, 27]        True                 True                              4                     0
+ 13  C     0.648498   0.303814   0.57338   [30, 5, 31]            True                 True                              3                     0
+ 14  C     0.259721   0.421567   0.312484  [32, 34, 33, 6]        True                 True                              4                     1
+ 15  C     0.38192    0.599219   0.258487  [6, 35, 36]            True                 True                              3                     0
+ 16  C     0.278418   0.491555   0.663895  [37, 7]                False                True                              3                    10
+ 17  C     0.228959   0.672334   0.54439   [38, 7, 39, 40]        True                 True                              4                     0
+ 18  C     0.484632   0.418396   0.798628  [41, 8, 42]            True                 True                              3                     0
+ 19  C     0.377004   0.604723   0.742889  [8]                    False                True                              3                    10
+ 20  C     0.728928   0.616989   0.527605  [9]                    False                True                              3                    10
+ 21  C     0.719136   0.576274   0.745905  [9, 44]                False                True                              3                    10
+ 22  C     0.404723   0.40247    0.177821  [10]                   False                True                              3                    10
+ 23  C     0.610054   0.33026    0.132728  [10]                   False                True                              3                    10
+ 24  C     0.553648   0.688146   0.315311  [11]                   False                True                              3                    10
+ 25  C     0.624897   0.610183   0.134303  [11]                   False                True                              3                    10
+ 26  C     0.746066   0.605732   0.305232  [11]                   False                True                              3                    10
+ 27  C     0.749279   0.371152   0.267538  [12]                   False                True                              3                    10
+ 28  C     0.850304   0.278457   0.426031  [12, 43]               False                True                              3                    10
+ 29  C     0.691316   0.180124   0.331311  [62, 12]               False                True                              3                    10
+ 30  C     0.556242   0.221609   0.608029  [13]                   False                True                              3                    10
+ 31  C     0.735234   0.342941   0.659493  [13]                   False                True                              3                    10
+ 32  C     0.224963   0.437152   0.189934  [14]                   False                True                              3                    10
+ 33  C     0.318391   0.30826    0.326231  [14]                   False                True                              3                    10
+ 34  C     0.155508   0.425132   0.387292  [14]                   False                True                              3                    10
+ 35  N     0.331736   0.710721   0.251067  [47, 15]               False                True                              4                    10
+ 36  C     0.476389   0.565903   0.178267  [15]                   False                True                              3                    10
+ 37  Si    0.239019   0.347434   0.65059   [85, 16]               False                True                              4                    10
+ 38  C     0.103324   0.647243   0.551852  [17]                   False                True                              3                    10
+ 39  C     0.255598   0.72368    0.429833  [17]                   False                True                              3                    10
+ 40  Si    0.267165   0.768943   0.652589  [17, 53, 52, 51]       True                 True                              4                     0
+ 41  C     0.466649   0.298757   0.755819  [18]                   False                True                              3                    10
+ 42  C     0.51862    0.438421   0.920747  [18]                   False                True                              3                    10
+ 43  N     0.934832   0.206257   0.374569  [48, 28, 49, 50]       True                 True                              4                     0
+ 44  N     0.758048   0.471781   0.796634  [21, 45, 46]           False                True                              4                    10
+ 45  Si    0.874517   0.422808   0.723806  [44, 65]               False                True                              4                    10
+ 46  Si    0.794338   0.495875   0.93581   [44, 107]              False                True                              4                    10
+ 47  Si    0.189223   0.698106   0.222811  [82, 35]               False                True                              4                    10
+ 48  Si    0.870424   0.087471   0.319717  [80, 81, 43]           False                True                              4                    10
+ 49  Si    1.03257    0.166463   0.475224  [111, 43]              False                True                              4                    10
+ 50  Si    1.00213    0.278886   0.267504  [43]                   False                True                              4                    10
+ 51  N     0.412466   0.779411   0.659328  [40, 54, 55]           True                 True                              3                     0
+ 52  N     0.210307   0.899954   0.623079  [40]                   False                True                              3                    10
+ 53  N     0.215866   0.721392   0.780552  [78, 40]               False                True                              3                    10
+ 54  Si    0.490945   0.784951   0.536537  [56, 51, 58, 57]       True                 True                              4                     0
+ 55  Si    0.479287   0.784338   0.788857  [51, 72, 70, 71]       True                 True                              4                     0
+ 56  N     0.404264   0.758765   0.422221  [54]                   False                True                              3                    10
+ 57  N     0.550671   0.917297   0.522947  [54, 61, 60, 59]       True                 True                              4                     0
+ 58  N     0.596381   0.68433    0.541651  [54]                   False                True                              3                    10
+ 59  Si    0.556868   0.981496   0.653742  [57, 63]               False                True                              4                    10
+ 60  Si    0.685412   0.904481   0.468653  []                     False                False                                                   0
+ 61  Si    0.469457   0.998261   0.432855  [98, 57]               False                True                              4                    10
+ 62  N     0.570576   0.162202   0.320962  [66, 29]               False                True                              4                    10
+ 63  N     0.422621   0.990181   0.710041  [64, 59]               False                True                              3                    10
+ 64  Si    0.331571   1.09508    0.665623  [67, 69, 63, 68]       True                 True                              4                     0
+ 65  N     0.93818    0.316046   0.800071  [76, 45, 77]           True                 True                              3                     1
+ 66  Si    0.500641   0.244491   0.418966  []                     False                False                                                   0
+ 67  N     0.199197   1.03821    0.643048  [87, 86, 64]           True                 True                              3                     1
+ 68  N     0.381299   1.15326    0.541487  [64, 91]               False                True                              3                    10
+ 69  N     0.323168   1.19868    0.767917  [64]                   False                True                              3                    10
+ 70  N     0.485582   0.650079   0.845447  [74, 55]               False                True                              3                    10
+ 71  N     0.614479   0.836317   0.771867  [55, 73]               False                True                              3                    10
+ 72  N     0.404622   0.871545   0.878788  [55]                   False                True                              3                    10
+ 73  Si    0.715485   0.75599    0.70395   [71]                   False                True                              4                    10
+ 74  Si    0.369842   0.59465    0.914723  [75, 70]               False                True                              4                    10
+ 75  N     0.267949   0.557613   0.817187  [74]                   False                True                              3                    10
+ 76  Si    0.924527   0.177433   0.756856  [110, 65]              False                True                              4                    10
+ 77  Si    1.0155     0.347896   0.919549  [65, 89, 90, 88]       True                 True                              4                     0
+ 78  Si    0.215826   0.80984    0.896502  [79, 53]               False                True                              4                    10
+ 79  N     0.194913   0.731271   1.01757   [78]                   False                True                              3                    10
+ 80  N     0.938923  -0.031769   0.368266  [83, 48, 84]           True                 True                              3                     0
+ 81  N     0.87706    0.091441   0.174088  [48, 92, 93]           True                 True                              3                     0
+ 82  N     0.135216   0.583721   0.295383  [116, 47]              False                True                              3                    10
+ 83  Si    0.917699  -0.077412   0.505137  []                     False                False                                                   0
+ 84  Si    1.02865   -0.105366   0.279945  [80]                   False                True                              4                    10
+ 85  N     0.190734   0.322533   0.515254  [37]                   False                True                              3                    10
+ 86  Si    0.111473   1.0105     0.756203  [67]                   False                True                              4                    10
+ 87  Si    0.154546   1.00904    0.507316  [67]                   False                True                              4                    10
+ 88  N     1.0747     0.480402   0.905248  [77, 106, 104, 105]    True                 True                              4                     1
+ 89  N     0.927833   0.346142   1.03608   []                     False                False                                                   0
+ 90  N     1.12127    0.248996   0.936798  []                     False                False                                                   0
+ 91  Si    0.294303   1.16124    0.424716  [97, 68]               False                True                              4                    10
+ 92  Si    0.775209   0.163297   0.098387  [99, 101, 81, 100]     True                 True                              4                     1
+ 93  Si    0.985546   0.023556   0.104161  [95, 94, 81, 96]       True                 True                              4                     0
+ 94  N     0.979039   0.055215  -0.038045  [119, 93]              False                True                              3                    10
+ 95  N     0.972567  -0.120532   0.122528  [113, 93]              False                True                              3                    10
+ 96  N     1.11352    0.068102   0.158074  [93, 109]              False                True                              3                    10
+ 97  N     0.312003   1.04198    0.342669  []                     False                False                                                   0
+ 98  N     0.3928     0.910905   0.344765  [103, 61]              False                True                              3                    10
+ 99  N     0.648403   0.091857   0.10754   []                     False                False                                                   0
+100  N     0.815897   0.172402  -0.041359  [92, 102]              False                True                              3                    10
+101  N     0.759477   0.297486   0.153279  [92]                   False                True                              4                    10
+102  Si    0.717264   0.203646  -0.144133  [115, 100, 114]        False                True                              4                    10
+103  Si    0.460839   0.833584   0.24152   []                     False                False                                                   0
+104  Si    1.08405    0.514456   0.763754  []                     False                False                                                   0
+105  Si    1.20808    0.480675   0.964225  []                     False                False                                                   0
+106  Si    0.991185   0.578581   0.973463  []                     False                False                                                   0
+107  N     0.715913   0.607238   0.987917  [118, 46]              False                True                              3                    10
+108  Si    0.064073   0.101627   0.159313  []                     False                False                                                   0
+109  Si    1.23012   -0.019175   0.150659  []                     False                False                                                   0
+110  N     0.865092   0.173646   0.623738  [112, 76]              False                True                              3                    10
+111  N     0.965167   0.094417   0.582619  []                     False                False                                                   0
+112  Si    0.729925   0.121965   0.605677  [110]                  False                True                              4                    10
+113  Si    0.848675  -0.187906   0.085396  []                     False                False                                                   0
+114  N     0.720354   0.346639  -0.172607  []                     False                False                                                   0
+115  N     0.584412   0.166335  -0.096955  [117, 102]             False                True                              4                    10
+116  Si    0.025435   0.60234    0.389558  []                     False                False                                                   0
+117  Si    0.501815   0.126882  -0.210483  []                     False                False                                                   0
+118  Si    0.651557   0.700404   0.896016  []                     False                False                                                   0
+119  Si    0.925613  -0.042554  -0.132143  []                     False                False                                                   0
+Density = 2.080 g/cm-3
+cnbd =  verbosity: 1
+seed: 1218
+rng: Generator(PCG64)
+species_properties: {'Si': {'coord_proba': [0, 0, 0, 0, 1], 'clustering_proba': [0, 0.05, 0.95]}, 'C': {'coord_proba': [0, 0, 0, 0.9, 0.1], 'clustering_proba': [0.025, 0.95, 0.025]}, 'N': {'coord_proba': [0, 0, 0, 0.7, 0.3], 'clustering_proba': [0.95, 0.05, 0]}}
+system: {'cell_lengths': [12, 12, 12], 'cell_angles': [90, 90, 90], 'atom_types': ['Si', 'C', 'N'], 'nb_of_atoms_by_type': [40, 40, 40]}
+bond_lengths_matrix: [[2.2  1.8  1.75]
+ [1.8  1.54 1.47]
+ [1.75 1.47 1.45]]
+MAX_ATTEMPTS: 10
+NUMERIC_TOLERANCE: 1e-05
+MAX_ITERATIONS: 1000
+search_radius: 3.0
+abs_bond_length_tol: 0.0
+rel_bond_length_tol: 0.1
+visualizer: ase
+export_format: poscar
+structure: Full Formula (Si40 C40 N40)
+Reduced Formula: SiCN
+abc   :  12.000000  12.000000  12.000000
+angles:  90.000000  90.000000  90.000000
+Sites (120)
+  #  SP           a          b          c  connected_neighbors    is_shell_complete    is_treated      target_coord_number    treatment_attempts
+---  ----  --------  ---------  ---------  ---------------------  -------------------  ------------  ---------------------  --------------------
+  0  C     0.5        0.5        0.5       [2, 1, 3]              True                 True                              3                     0
+  1  C     0.577326   0.442706   0.415103  [0, 5, 4]              True                 True                              3                     0
+  2  C     0.378431   0.526382   0.468465  [6, 7, 0]              True                 True                              3                     0
+  3  C     0.544243   0.530912   0.616432  [0, 8, 9]              True                 True                              3                     0
+  4  C     0.577961   0.481227   0.292689  [10, 1, 11]            True                 True                              3                     0
+  5  C     0.654018   0.346892   0.452619  [13, 1, 12]            True                 True                              3                     0
+  6  C     0.340024   0.515722   0.346479  [14, 15, 2]            True                 True                              3                     0
+  7  C     0.295269   0.563423   0.558917  [16, 17, 2]            True                 True                              3                     0
+  8  C     0.468626   0.51801    0.719316  [19, 18, 3]            True                 True                              3                     2
+  9  C     0.664102   0.574725   0.629981  [3, 20, 21]            True                 True                              3                     0
+ 10  C     0.530913   0.404652   0.201079  [22, 23, 4]            True                 True                              3                     0
+ 11  C     0.625643   0.596322   0.261884  [4, 25, 24, 26]        True                 True                              4                     0
+ 12  C     0.736229   0.294156   0.369375  [29, 5, 28, 27]        True                 True                              4                     0
+ 13  C     0.648498   0.303814   0.57338   [30, 5, 31]            True                 True                              3                     0
+ 14  C     0.259721   0.421567   0.312484  [32, 34, 33, 6]        True                 True                              4                     1
+ 15  C     0.38192    0.599219   0.258487  [6, 35, 36]            True                 True                              3                     0
+ 16  C     0.278418   0.491555   0.663895  [37, 7]                False                True                              3                    10
+ 17  C     0.228959   0.672334   0.54439   [38, 7, 39, 40]        True                 True                              4                     0
+ 18  C     0.484632   0.418396   0.798628  [41, 8, 42]            True                 True                              3                     0
+ 19  C     0.377004   0.604723   0.742889  [8]                    False                True                              3                    10
+ 20  C     0.728928   0.616989   0.527605  [9]                    False                True                              3                    10
+ 21  C     0.719136   0.576274   0.745905  [9, 44]                False                True                              3                    10
+ 22  C     0.404723   0.40247    0.177821  [10]                   False                True                              3                    10
+ 23  C     0.610054   0.33026    0.132728  [10]                   False                True                              3                    10
+ 24  C     0.553648   0.688146   0.315311  [11]                   False                True                              3                    10
+ 25  C     0.624897   0.610183   0.134303  [11]                   False                True                              3                    10
+ 26  C     0.746066   0.605732   0.305232  [11]                   False                True                              3                    10
+ 27  C     0.749279   0.371152   0.267538  [12]                   False                True                              3                    10
+ 28  C     0.850304   0.278457   0.426031  [12, 43]               False                True                              3                    10
+ 29  C     0.691316   0.180124   0.331311  [62, 12]               False                True                              3                    10
+ 30  C     0.556242   0.221609   0.608029  [13]                   False                True                              3                    10
+ 31  C     0.735234   0.342941   0.659493  [13]                   False                True                              3                    10
+ 32  C     0.224963   0.437152   0.189934  [14]                   False                True                              3                    10
+ 33  C     0.318391   0.30826    0.326231  [14]                   False                True                              3                    10
+ 34  C     0.155508   0.425132   0.387292  [14]                   False                True                              3                    10
+ 35  N     0.331736   0.710721   0.251067  [47, 15]               False                True                              4                    10
+ 36  C     0.476389   0.565903   0.178267  [15]                   False                True                              3                    10
+ 37  Si    0.239019   0.347434   0.65059   [85, 16]               False                True                              4                    10
+ 38  C     0.103324   0.647243   0.551852  [17]                   False                True                              3                    10
+ 39  C     0.255598   0.72368    0.429833  [17]                   False                True                              3                    10
+ 40  Si    0.267165   0.768943   0.652589  [17, 53, 52, 51]       True                 True                              4                     0
+ 41  C     0.466649   0.298757   0.755819  [18]                   False                True                              3                    10
+ 42  C     0.51862    0.438421   0.920747  [18]                   False                True                              3                    10
+ 43  N     0.934832   0.206257   0.374569  [48, 28, 49, 50]       True                 True                              4                     0
+ 44  N     0.758048   0.471781   0.796634  [21, 45, 46]           False                True                              4                    10
+ 45  Si    0.874517   0.422808   0.723806  [44, 65]               False                True                              4                    10
+ 46  Si    0.794338   0.495875   0.93581   [44, 107]              False                True                              4                    10
+ 47  Si    0.189223   0.698106   0.222811  [82, 35]               False                True                              4                    10
+ 48  Si    0.870424   0.087471   0.319717  [80, 81, 43]           False                True                              4                    10
+ 49  Si    1.03257    0.166463   0.475224  [111, 43]              False                True                              4                    10
+ 50  Si    1.00213    0.278886   0.267504  [43]                   False                True                              4                    10
+ 51  N     0.412466   0.779411   0.659328  [40, 54, 55]           True                 True                              3                     0
+ 52  N     0.210307   0.899954   0.623079  [40]                   False                True                              3                    10
+ 53  N     0.215866   0.721392   0.780552  [78, 40]               False                True                              3                    10
+ 54  Si    0.490945   0.784951   0.536537  [56, 51, 58, 57]       True                 True                              4                     0
+ 55  Si    0.479287   0.784338   0.788857  [51, 72, 70, 71]       True                 True                              4                     0
+ 56  N     0.404264   0.758765   0.422221  [54]                   False                True                              3                    10
+ 57  N     0.550671   0.917297   0.522947  [54, 61, 60, 59]       True                 True                              4                     0
+ 58  N     0.596381   0.68433    0.541651  [54]                   False                True                              3                    10
+ 59  Si    0.556868   0.981496   0.653742  [57, 63]               False                True                              4                    10
+ 60  Si    0.685412   0.904481   0.468653  []                     False                False                                                   0
+ 61  Si    0.469457   0.998261   0.432855  [98, 57]               False                True                              4                    10
+ 62  N     0.570576   0.162202   0.320962  [66, 29]               False                True                              4                    10
+ 63  N     0.422621   0.990181   0.710041  [64, 59]               False                True                              3                    10
+ 64  Si    0.331571   1.09508    0.665623  [67, 69, 63, 68]       True                 True                              4                     0
+ 65  N     0.93818    0.316046   0.800071  [76, 45, 77]           True                 True                              3                     1
+ 66  Si    0.500641   0.244491   0.418966  []                     False                False                                                   0
+ 67  N     0.199197   1.03821    0.643048  [87, 86, 64]           True                 True                              3                     1
+ 68  N     0.381299   1.15326    0.541487  [64, 91]               False                True                              3                    10
+ 69  N     0.323168   1.19868    0.767917  [64]                   False                True                              3                    10
+ 70  N     0.485582   0.650079   0.845447  [74, 55]               False                True                              3                    10
+ 71  N     0.614479   0.836317   0.771867  [55, 73]               False                True                              3                    10
+ 72  N     0.404622   0.871545   0.878788  [55]                   False                True                              3                    10
+ 73  Si    0.715485   0.75599    0.70395   [71]                   False                True                              4                    10
+ 74  Si    0.369842   0.59465    0.914723  [75, 70]               False                True                              4                    10
+ 75  N     0.267949   0.557613   0.817187  [74]                   False                True                              3                    10
+ 76  Si    0.924527   0.177433   0.756856  [110, 65]              False                True                              4                    10
+ 77  Si    1.0155     0.347896   0.919549  [65, 89, 90, 88]       True                 True                              4                     0
+ 78  Si    0.215826   0.80984    0.896502  [79, 53]               False                True                              4                    10
+ 79  N     0.194913   0.731271   1.01757   [78]                   False                True                              3                    10
+ 80  N     0.938923  -0.031769   0.368266  [83, 48, 84]           True                 True                              3                     0
+ 81  N     0.87706    0.091441   0.174088  [48, 92, 93]           True                 True                              3                     0
+ 82  N     0.135216   0.583721   0.295383  [116, 47]              False                True                              3                    10
+ 83  Si    0.917699  -0.077412   0.505137  []                     False                False                                                   0
+ 84  Si    1.02865   -0.105366   0.279945  [80]                   False                True                              4                    10
+ 85  N     0.190734   0.322533   0.515254  [37]                   False                True                              3                    10
+ 86  Si    0.111473   1.0105     0.756203  [67]                   False                True                              4                    10
+ 87  Si    0.154546   1.00904    0.507316  [67]                   False                True                              4                    10
+ 88  N     1.0747     0.480402   0.905248  [77, 106, 104, 105]    True                 True                              4                     1
+ 89  N     0.927833   0.346142   1.03608   []                     False                False                                                   0
+ 90  N     1.12127    0.248996   0.936798  []                     False                False                                                   0
+ 91  Si    0.294303   1.16124    0.424716  [97, 68]               False                True                              4                    10
+ 92  Si    0.775209   0.163297   0.098387  [99, 101, 81, 100]     True                 True                              4                     1
+ 93  Si    0.985546   0.023556   0.104161  [95, 94, 81, 96]       True                 True                              4                     0
+ 94  N     0.979039   0.055215  -0.038045  [119, 93]              False                True                              3                    10
+ 95  N     0.972567  -0.120532   0.122528  [113, 93]              False                True                              3                    10
+ 96  N     1.11352    0.068102   0.158074  [93, 109]              False                True                              3                    10
+ 97  N     0.312003   1.04198    0.342669  []                     False                False                                                   0
+ 98  N     0.3928     0.910905   0.344765  [103, 61]              False                True                              3                    10
+ 99  N     0.648403   0.091857   0.10754   []                     False                False                                                   0
+100  N     0.815897   0.172402  -0.041359  [92, 102]              False                True                              3                    10
+101  N     0.759477   0.297486   0.153279  [92]                   False                True                              4                    10
+102  Si    0.717264   0.203646  -0.144133  [115, 100, 114]        False                True                              4                    10
+103  Si    0.460839   0.833584   0.24152   []                     False                False                                                   0
+104  Si    1.08405    0.514456   0.763754  []                     False                False                                                   0
+105  Si    1.20808    0.480675   0.964225  []                     False                False                                                   0
+106  Si    0.991185   0.578581   0.973463  []                     False                False                                                   0
+107  N     0.715913   0.607238   0.987917  [118, 46]              False                True                              3                    10
+108  Si    0.064073   0.101627   0.159313  []                     False                False                                                   0
+109  Si    1.23012   -0.019175   0.150659  []                     False                False                                                   0
+110  N     0.865092   0.173646   0.623738  [112, 76]              False                True                              3                    10
+111  N     0.965167   0.094417   0.582619  []                     False                False                                                   0
+112  Si    0.729925   0.121965   0.605677  [110]                  False                True                              4                    10
+113  Si    0.848675  -0.187906   0.085396  []                     False                False                                                   0
+114  N     0.720354   0.346639  -0.172607  []                     False                False                                                   0
+115  N     0.584412   0.166335  -0.096955  [117, 102]             False                True                              4                    10
+116  Si    0.025435   0.60234    0.389558  []                     False                False                                                   0
+117  Si    0.501815   0.126882  -0.210483  []                     False                False                                                   0
+118  Si    0.651557   0.700404   0.896016  []                     False                False                                                   0
+119  Si    0.925613  -0.042554  -0.132143  []                     False                False                                                   0
+
+POSCAR file saved as /home/cadarp02/python/pyama/ceramicNetworkBuilder/POSCAR.

@@ -1,0 +1,82 @@
+{
+    "species_properties": {
+        "Si": {
+            "coord_proba": [
+                0,
+                0,
+                0,
+                0,
+                1
+            ],
+            "clustering_proba": [
+                0,
+                0.05,
+                0.95
+            ]
+        },
+        "C": {
+            "coord_proba": [
+                0,
+                0,
+                0,
+                0.9,
+                0.1
+            ],
+            "clustering_proba": [
+                0.025,
+                0.95,
+                0.025
+            ]
+        },
+        "N": {
+            "coord_proba": [
+                0,
+                0,
+                0,
+                0.7,
+                0.3
+            ],
+            "clustering_proba": [
+                0.95,
+                0.05,
+                0
+            ]
+        }
+    },
+    "system": {
+        "cell_lengths": [
+            8,
+            8,
+            8
+        ],
+        "cell_angles": [
+            90,
+            90,
+            90
+        ],
+        "atom_types": [
+            "Si",
+            "C",
+            "N"
+        ],
+        "nb_of_atoms_by_type": [
+            9,
+            8,
+            8
+        ]
+    },
+    "parameters": {
+        "seed": 9896,
+        "max_iterations_step1": 1000,
+        "max_iterations_step2": 0,
+        "max_attempts": 10,
+        "search_radius": 3.0,
+        "abs_bond_length_tol": 0.0,
+        "rel_bond_length_tol": 0.1,
+        "export_format": "poscar",
+        "print_to_console": true,
+        "print_to_file": false,
+        "numeric_tolerance": 1e-05,
+        "verbosity": 1
+    }
+}

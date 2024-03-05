@@ -1,0 +1,38 @@
+Matrix of bond lengths calculated for [Si, C, N]
+
+Bond length matrix:
+[[2.2  1.8  1.75]
+ [1.8  1.54 1.47]
+ [1.75 1.47 1.45]]
+
+
+2022/01/24: 
+Problems to solve : 
+(1) algorithm tends to complete the shell of 'easy' sites: this leaves too many sites with incomplete shells.
+
+(2) Clustering will favor carbon domains, but these will be interconnected as opposed to graphite-like. Not clear how one can induce the formation of such domains.
+
+(3) In a previous version of the code, at least one site appeared to be not added even though space seemed to be available. Check whether this situation still occurs and if so understand why.
+
+(4) (Problem in connection to (1)). Many Si atoms tend to remain in the end with a composition such as Si39C31N30. It seems that the Si3N4 domains are difficult to reproduce because Si atoms are difficult to insert.
+
+
+DEGUGGING:
+- version of 2022-02-17: seed: 1756. Atom 71 (C), created at itaration 39 is isolated from the others. Understand why.
+
+- version 2022.10.26_01, seed: 6815, max_iterations_step2 500:
+fixed
+
+
+
+TODO list:
+- add a function to calculate unit cell parameters from a fixed density (a cubic cell will automatically be used).
+ this function will be called set_cell_from_density() and will bypass the corresponding lines of the system definition in  
+
+
+
+
+
+
+
+

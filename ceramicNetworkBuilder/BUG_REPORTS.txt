@@ -1,0 +1,19 @@
+BUG REPORTS:
+IMPORTANT NOTE:
+Report bugs below. Program version number and seed must be provided as well as other parameters that seem to have an impact.
+Attach an output file to every bug and copy the error printed in shell therein. Suggested output file name would be:
+output.bug.YYYY-MM-DD_SOMENUMBER.txt
+
+*****************************************************
+- version of 2022-02-17: seed: 1756. Atom 71 (C), created at itaration 39 is isolated from the others. Understand why.
+*****************************************************
+  fixed ??
+
+*****************************************************
+- version 2022.10.26_01, seed: 6815, max_iterations_step2 500:
+  see output and error in output.bug.2022-10-26_01.txt
+*****************************************************
+  FIXED. Step 2 had seemingly gone as far as it could, given the probabilities calculated in function pick_atom_to_relocate(), and had to be exited.
+
+
+

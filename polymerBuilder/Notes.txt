@@ -1,0 +1,26 @@
+Matrix of bond lengths calculated for [Si, C, N]
+
+Bond length matrix:
+[[2.2  1.8  1.75]
+ [1.8  1.54 1.47]
+ [1.75 1.47 1.45]]
+
+
+2022/01/24: 
+Problems to solve : 
+(1) algorithm tends to complete the shell of 'easy' sites: this leaves too many sites with incomplete shells.
+
+(2) Clustering will favor carbon domains, but these will be interconnected as opposed to graphite-like. Not clear how one can induce the formation of such domains.
+
+(3) seed 873: 3rd neighbor to site 5 not added whereas space seems to be available. find out why.
+
+
+
+TODO list:
+(i) add 'target_coord_nb' and 'connected_neighbors' to site properties. Update connected_neighbors (via get_connected_neighbors())
+
+
+
+
+
+

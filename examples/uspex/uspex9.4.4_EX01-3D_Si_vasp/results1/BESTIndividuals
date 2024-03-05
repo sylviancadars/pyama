@@ -1,0 +1,5 @@
+Gen   ID    Origin   Composition    Enthalpy   Volume  Density   Fitness   KPOINTS  SYMM  Q_entr A_order S_order
+                                      (eV)     (A^3)  (g/cm^3)
+  1   17   Random    [      8    ]   -42.486   171.581   2.174    -42.486 [ 5  3  3]  65  0.008  2.913  2.897
+  2   39 keptBest    [      8    ]   -42.486   171.581   2.174    -42.486 [ 5  3  3]  65  0.008  2.913  2.897
+  3   57 keptBest    [      8    ]   -42.486   171.581   2.174    -42.486 [ 5  3  3]  65  0.008  2.913  2.897

@@ -1,0 +1,19 @@
+System = fcc Si 
+ISMEAR = 0; SIGMA = 0.1;
+KSPACING = 0.5
+
+isym = 0
+istart = 1     ! change to 1 for continuation
+icharg  = 0    ! change to 0 for continuation
+
+isif = 2       ! canonical NVT ensemble
+nsw  = 100     ! should fit within 100 h walltime with 160 CPUs
+ibrion = 0     ! molecular dynamics
+potim = 1.0    ! time step in fs
+tebeg = 300    ! initial temperature
+mdalgo = 2     ! Nose-Hoover thermostat
+smass = 0      ! effective 'mass', i.e. frequency of temperature fluctuations : 1/40 steps
+nblock = 1     ! write xdatcar every ionic steps
+ncore = 4
+kspacing = 0.3
+
