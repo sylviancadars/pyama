@@ -1,9 +1,20 @@
-
 """
-Opening a set of lowest-energy structures structures from a USPEX run and measure their mutual distances (i.e. similarity) using different method :
+uspexDataManipulation Module
+
+Sylvian Cadars, Assil Bouzid
+Institute of Research on Ceramics (IRCER), University of Limoges, CNRS, France
+sylvian.cadars@unilim.fr
+
+Open a set of lowest-energy structures structures from a USPEX run and measure their mutual distances (i.e. similarity) using different method :
  - structure fingerprints and cosine distances as defined in Oganov AR et al., J. Chem. Phys. 130, 104504 (2009)
  - structure fingerprint and distances using pymatgen local_env tools as detailed in : https://wiki.materialsproject.org/Structure_Similarity
-Comparing results obtained with both methods
+Compare results obtained with both methods
+
+2D-crystal (or thin film) runs (-200) may now be processed with a more robust and adaptative parsing of the Individuals output file summarizing the amain information on explored structures. In addition to (static) properties such as IDs, enthalpies, etc., a new property that can accomodate any type of metadata found in the Individuals file is included: individuals_dict.
+
+This new parsing is new implemented in the function parse_individuals_file, which may also be called externally (without instanciating  uspexStructuresData class):
+
+from pyama.uspexAnalysesPkg.uspexDataManipulation import parse_individuals_file
 """
 
 import os
@@ -16,19 +27,103 @@ import pickle
 import structureComparisonsPkg.distanceTools as dt
 import json
 
-class uspexStructuresData :
-    """
-    Class designed to extract and manipulate metadata associated with structures generated with the USPEX code.
-    TODO : Consider whether it might be a inherited from pymatgen structure class
 
-    Parameters :
-    fileOrDirectoryName : Name of a results[X] directory containing the output files of a uspex run. The directory should contain a "Individuals" file.
-
+def parse_individuals_file(file_name, verbosity=1, skip_magmoment_type=True):
     """
+    Parse the Individuals output file of USPEX 
+    
+    Tested for USPEX version 10.4 on fixed-composition bulk (calculationType 300) 
+    and "2D-crystal" or thin-film calculations (calculationType -200)
+    
+    Parsed data are recovered in the form of a dictionary (which can then be 
+    passed into a pandas dataframe, for example).
+    
+    Args:
+        file_name: str
+            path to the Individuals file to be parsed
+        verbosity: int (default is 1)
+            verbosity level
+        skip_magmoment_type: bool (default is True)
+            Should be set to True unless  magnetic moments are used in the calculation.
+            This is critical for "2D-crystal" or thin-film calculations (calculationType -200)
+            because (at least in USPEX v. 10.4) this property appears in the head of the 
+            Individual files but no corresponding values are parsed.
+    
+    Returns:
+        individuals_dict: dict
+            Dictionnary with keys corresponding to the properties listed in
+            USPEX Individuals output file and values will be lists or
+            numpy arrays containing the corresponding property values
+            for each structure. Each list of array will have the number
+            of structures as first dimension length. 
+    """
+    if verbosity >= 1:
+        print('Parsing data from file : ', file_name)
+    with open(file_name, 'r') as f:
+        lines = f.readlines()
+
+    nb_of_header_lines = 2
+
+    property_names = lines[0].split()
+
+    # TODO: adapt in the case of magnetic calculations
+    if skip_magmoment_type and 'Magmoment-Type' in property_names:
+        property_names.remove('Magmoment-Type')
+
+    if verbosity >= 2:
+        print('property_names = {}'.format(property_names))
+
+    individuals_dict = {prop: [] for prop in property_names}
+    # TODO: read units ?
+    individuals_dict['nb_of_structures'] = len(lines)-nb_of_header_lines
+    if verbosity >= 2:
+        print('nb_of_structures = ', individuals_dict['nb_of_structures'])
+
+    for struct_index, line in enumerate(lines[nb_of_header_lines:]):
+        values = []
+        for str1 in line.split('['):
+            list1 = str1.strip().split(']')
+            if len(list1) > 1:
+                values.append(list1[0].strip().split())
+                [values.append(str2) for str2 in list1[1].strip().split()]
+            else:
+                [values.append(str2) for str2 in list1[0].strip().split()]
+
+        if verbosity >= 2 and not struct_index:
+            print('values = {}'.format(values))
+
+        if len(values) != len(property_names):
+            raise ValueError(('Unexpected number of parsed values in file {}, line {}: {}.'.format(
+                file_name, struct_index + nb_of_header_lines, line)))
+
+        for key, val in zip(property_names, values):
+            individuals_dict[key].append(val)
+            
+
+    if verbosity >= 3:
+        print('individuals_dict = {}', individuals_dict)
+
+    # Convert to appropriate formats:
+    for prop in property_names:
+        if prop in ['Gen', 'ID', 'SYMM']:
+            individuals_dict[prop] = [int(val) for val in individuals_dict[prop]]
+        if prop in ['Enthalpy', 'Volume', 'Density', 'Thickness', 'Surf_Area', 'Spec_surf_area',
+                    'Fitness', 'Q_entr', 'A_order', 'S_order']:
+            individuals_dict[prop] = [float(val) for val in individuals_dict[prop] if val != 'N/A']
+            # or directly convert in numpy array ?
+        if prop in ['Composition', 'KPOINTS']:
+            individuals_dict[prop] = [[int(val) for val in _list] for _list in individuals_dict[prop]]
+
+    return individuals_dict
+
+
+class uspexStructuresData():
     def __init__(self, fileOrDirectoryName = '',selectedStructures = 'all',
                  extractedPOSCARBaseName='ID-', extractedPOSCARExtention='.vasp',
                  r=None, sigma=0.02, r_max=8.0, r_steps=512, verbosity=1):
 
+        self.verbosity = verbosity
+        
         # Initialization of distance matrix data
         self.distance_data  = dt.distanceMatrixData(R=r, sigma=sigma,
             Rmax=r_max, Rsteps=r_steps)
@@ -52,8 +147,7 @@ class uspexStructuresData :
         # initilize distance data with provided paremeters
         self.set_distance_parameters(r=r, sigma=sigma, r_max=r_max, r_steps=r_steps)
         self.distance_matrix = None  # To be defined when necessary
-        self.verbosity = verbosity
-
+        
         # End of initialization function
 
     def as_dict(self):
@@ -75,7 +169,8 @@ class uspexStructuresData :
             'numbersOfAtomsOfEachType', 'numbersOfAtoms',
             'enthalpies', 'volumes', 'densities',
             'fitnesses', 'kpoints', 'symmGroupNb',
-            'Q_entr', 'A_order', 'S_order', 'distance_matrix',
+            'Q_entr', 'A_order', 'S_order', 'distance_matrix', 
+            'individuals_dict',
         ]
         for attr_name in attributes:
             attribute = self.__getattribute__(attr_name)
@@ -125,9 +220,115 @@ class uspexStructuresData :
         self.distance_data  = dt.distanceMatrixData(R=r, sigma=sigma,
             Rmax=r_max, Rsteps=r_steps)
 
+    def load_uspex_structure_data(self, fileOrDirectoryName, 
+                                  set_volumes_and_densities=False, **kwargs) :
+        """
+        Reading structure IDs, enthalpies, generation number, volumes, etc. from Individuals file
+
+        Parameters :
+            fileOrDirectoryName : Name of a results[X] directory containing the output files of a uspex run. The directory should contain a "Individuals" file.
+
+        Optional parameters :
+            enthalpy : enthaly will be retrieved  from file.
+
+            if none of the above is mentioned the function will return all parameters listed in the Individuals file.
+        """
+        targetFileName = 'Individuals'
+        if not os.path.exists(fileOrDirectoryName) :
+            errorMsg = fileOrDirectoryName + ' does not correspond to an existing file or directory.'
+            raise ValueError(errorMsg)
+        if os.path.isdir(fileOrDirectoryName) :
+            self.resultsDirectoryName = os.path.normpath(fileOrDirectoryName)
+            fileName = self.resultsDirectoryName + os.path.sep + targetFileName
+            print('fileName = ',fileName)
+            if not os.path.isfile(fileName) :
+                errorMsg = 'No file Individuals in directory ' + fileOrDirectoryName + '.'
+                raise ValueError(errorMsg)
+        elif os.path.isfile(fileOrDirectoryName) :
+            head, tail = os.path.split(fileOrDirectoryName)
+            if not tail == targetFileName :
+                print('WARNING : input file name is not : ',targetFileName)
+            fileName = os.path.normpath(fileOrDirectoryName)
+            name, self.resultsDirectoryName = os.path.split(os.path.abspath(fileName))
+
+        self.uspexStructuresDataDir = self.resultsDirectoryName+os.path.sep+'uspexStructuresDataDir'
+        self.extractedPOSCARSDirectoryName = self.uspexStructuresDataDir+os.path.sep+'extractedPOSCARS'
+        if 'saveFileName' in kwargs :
+            self.saveFileName = kwargs['saveFileName']
+        else :
+            # Setting default saveFileName
+            self.saveFileName = self.uspexStructuresDataDir+os.path.sep+'savedData.pkl'
+
+        self.print('Reading uspex-structure data from file : {}'.format(fileName), verb_th=1)
+
+        individuals_dict = parse_individuals_file(fileName, verbosity=self.verbosity)
+
+        """ Gen   ID    Origin   Composition    Enthalpy    Thickness   Surf_Area   Spec_surf_area   Fitness   KPOINTS  SYMM  Q_entr A_order S_order Magmoment-Type
+        Gen   ID    Origin   Composition    Enthalpy   Volume  Density   Fitness   KPOINTS  SYMM  Q_entr A_order S_order
+        """
+
+        self.nbOfStructures = individuals_dict['nb_of_structures']
+        self.generationNumbers = np.asarray(individuals_dict['Gen'])
+        self.IDs = np.asarray(individuals_dict['ID'])
+        self.creationMethods = individuals_dict['Origin']
+        self.numbersOfAtomTypes = np.empty(self.nbOfStructures,dtype=int)
+        self.numbersOfAtomsOfEachType = np.asarray(individuals_dict['Composition'])
+        self.numbersOfAtoms = np.sum(self.numbersOfAtomsOfEachType)
+        self.enthalpies = np.asarray(individuals_dict['ID'])
+        if 'Volume' in individuals_dict.keys():
+            self.volumes = np.asarray(individuals_dict['Volume'])
+        else:
+            # TODO: set volumes from structures
+            self.volumes = None
+        if 'Density' in individuals_dict.keys():
+            self.densities = np.asarray(individuals_dict['Density'])
+            # TODO: set densities from structures
+        else:
+            self.densities = None
+        self.fitnesses = np.asarray(individuals_dict['Fitness'])
+        self.kpoints = np.asarray(individuals_dict['KPOINTS'])
+        self.symmGroupNb = np.asarray(individuals_dict['SYMM'])
+        self.Q_entr = np.asarray(individuals_dict['Q_entr'])
+        self.A_order = np.asarray(individuals_dict['A_order'])
+        self.S_order = np.asarray(individuals_dict['S_order'])
+
+        self.individuals_dict = individuals_dict
+        
+        if (self.volumes is None or self.densities is None
+            ) and set_volumes_and_densities:
+            self.set_all_volumes_and_densities()
+        
+
+    # end of method get_uspex_structures_data
+
+    def set_all_volumes_and_densities(self):
+        """
+        Load individual structures to retrieve volume and density in case 
+        """
+        structures = get_structures_from_IDs(self.IDs)
+        self.volumes = np.zeros(self.nbOfStructures,dtype=float)
+        self.densities = np.zeros(self.nbOfStructures,dtype=float)
+        for i, structure in structures:
+            self.volumes[i] = structure.volume
+            self.densities[i] = float(structure.density)
+
+    def get_volumes_from_IDs(self, IDs):
+        """
+        get a list of volumes in Angstrom^3 from IDs
+        """
+        structures = get_structures_from_IDs(self.IDs)
+        return [float(structure.volume) for structure in structures]
+    
+    def get_densities_from_IDs(self, IDs):
+        """
+        get a list of densities in g.cm-3 from IDs
+        """
+        structures = get_structures_from_IDs(self.IDs)
+        return [float(structure.density) for structure in structures]
+    
     # Step 1 : read energies and structure IDs from USPEX output files ()
     # characteristics of the different structures (structures IDs, enthalpies and possibly other parameters) should read from file Individuals
-    def load_uspex_structure_data(self,fileOrDirectoryName,**kwargs) :
+    def load_uspex_structure_data_old(self,fileOrDirectoryName,**kwargs) :
         """
         Reading structure IDs, enthalpies, generation number, volumes, etc. from Individuals file
 
@@ -243,7 +444,6 @@ class uspexStructuresData :
         np.asarray(self.numbersOfAtomsOfEachType)
 
     # end of method get_uspex_structures_data
-
 
     def get_structure_IDs(self,**kwargs) :
         """
@@ -480,6 +680,7 @@ class uspexStructuresData :
         print('Looking for structures with IDs : ',structureIDs,' in file ',POSCARSFile)
         inputFile = open(POSCARSFile, 'r')
         count = 0
+        extractedPOSCARFileName = None
         writingFile = False
         while True:
             count += 1
@@ -964,6 +1165,100 @@ class uspexStructuresData :
                               skip_header=2)
         ids = [int(row[0]) for row in array]
         return ids
+
+    def get_structure_IDs_from_property(self, filter_dict):
+        """
+        filter_dict example:
+        {'Thickness/Volume/Enthalpy' : {'lt/gt/le/ge/in': value/list}}
+        
+        WARNING: CASE SENSITIVE
+        """
+        def test(value, operator, filter_value):
+            
+            if operator.lower() in ['<', 'lt']:
+                test = True if value < filter_value else False
+            elif operator.lower() in ['<=', 'le']:
+                test = True if value <= filter_value else False
+            elif operator.lower() in ['>', 'gt']:
+                test = True if value > filter_value else False
+            elif operator.lower() in ['<=', 'le']:
+                test = True if value >= filter_value else False
+            elif operator.lower() in ['==', 'eq']:
+                test = True if value == filter_value else False
+            elif operator.lower() == 'in':
+                test = True if value in filter_value else False
+            else:
+                raise ValueError('Unkown selection operator')
+            self.print('Testing {} {} {}: {}'.format(value, operator, filter_value, test), verb_th=3)
+            return test
+           
+        available_properties = list(self.individuals_dict.keys())
+        # TODO: add volume or density in case they are not in individuals_dict
+        filter_properties = list(filter_dict.keys())
+        filtered_IDs = set(self.IDs)
+        for filter_property in filter_properties:
+            if filter_property in available_properties:
+                for operator, filter_value in filter_dict[filter_property].items():
+                    matching_IDs = [self.IDs[i] for i, v in 
+                                    enumerate(self.individuals_dict[filter_property]) 
+                                    if test(v, operator, filter_value)]
+                    self.print('matching_IDs = {}'.format(matching_IDs), verb_th=3)
+                    filtered_IDs = filtered_IDs.intersection(matching_IDs)                
+                    
+        self.print('{} structure IDs have been selected.'.format(len(filtered_IDs)), verb_th=1)
+        
+        filtered_IDs = list(filtered_IDs)
+        filtered_IDs.sort()
+        self.print(filtered_IDs, verb_th=2)
+        
+        return filtered_IDs
+
+    def get_input_folder(self):
+        return os.path.split(os.path.abspath(self.resultsDirectoryName))[0]
+
+    def export_as_seed_or_anti_seed(self, structureIDs, destination='Seeds', 
+                                    output_basename='POSCARS', write_mode='a', 
+                                    use_initial=False):
+        """
+        Copy POSCAR files selected by IDs to (Anti)Seeds/POSCARS
+
+        Args:
+            structureIDs: int, list, tuple
+                structure ID(s)
+            destination: str (default is Seeds)
+                Use selected structures as Seeds or AntiSeeds (non-case-sensitive)
+            output_basename: str (default: 'POSCARS')
+                Relative name of the output file
+            write_mode: str (default is 'a')
+                Write mode of the output file ('a' to append, 'w' to overwrite)
+            use_initial: bool (default is False)
+                Whether initial rather than relaxed structures should be used.
+            
+        Returns:
+            destination_file: str
+                absolute output file path
+        """
+        if 'antiseed' in destination.lower():
+            destination_folder_basename = 'AntiSeeds'
+        elif 'seed' in destination.lower():
+            destination_folder_basename = 'Seeds'
+        
+        poscars = self.get_poscars_from_IDs(structureIDs, use_initial=use_initial)
+        
+        destination_file = os.path.join(self.get_input_folder(), destination_folder_basename, output_basename)
+        with open(destination_file, write_mode) as f:
+            for poscar in poscars:
+                # Need to remove symbols at the end of coordinate lines
+                poscar_lines = poscar.get_str(significant_figures=8).splitlines()
+                for index, line in enumerate(poscar_lines):
+                    if index >= 8 and len(line.split()) > 3:
+                        poscar_lines[index] = ''.join(['{:>15}'.format(s) for s in line.split()[:3] ])
+                f.writelines([line + '\n' for line in poscar_lines])
+        
+        self.print('{} POSCAR files have been written to file {}.'.format(
+            len(poscars), destination_file), verb_th=1)
+    
+        return destination_file
 
 # end of class uspexStructuresData
 
