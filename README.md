@@ -23,6 +23,11 @@ Currently-implemented packages :
 - structureComparisonsPkg : tools to calculate periodic structure fingerprints and use them to calculate distances between these.
 - uspexAnalysesPkg : manipulate and extract structures generated with the supercell program for combinatorial anlyses of disorder in crystals
 - diffractionPkg : tools to calculate atomic form factors, and (in progress) caculate exact X-ray total scattering data
+
+	The diffractionPkg/nanopdf.py module was originally developped by Olivier Masson, Institut de Recherche sur les Ceramiques, CNRS, Universite de Limoges, France, and adapted by Sylvian Cadars. If you use this specific module, please cite:
+	Masson Olivier, and Thomas Philippe, «Exact and Explicit Expression of the Atomic Pair Distribution Function as
+Obtained from X-Ray Total Scattering Experiments», Journal of Applied Crystallography 46, nᵒ 2 (1 avril 2013): 461‑65. https://doi.org/10.1107/S0021889812051357.
+
 - ceramicNetworkBuilder : build a ceramic network atom-by atom with coordinance and clustering probabilities.
 
 Currently-implemented packages :
