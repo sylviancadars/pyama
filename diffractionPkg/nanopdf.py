@@ -3,10 +3,12 @@
 Calculation of exact X-ray total scattering
 
 Olivier Masson 05/05/2016 olivier.masson@unilim.fr
-Masson, Olivier, and Philippe Thomas.
-«Exact and Explicit Expression of the Atomic Pair Distribution Function as
-Obtained from X-Ray Total Scattering Experiments».
-Journal of Applied Crystallography 46, nᵒ 2 (1 avril 2013): 461‑65.
+
+If you use this module, please cite:
+Masson O., and Thomas P.,
+Exact and Explicit Expression of the Atomic Pair Distribution Function as
+Obtained from X-Ray Total Scattering Experiments,
+Journal of Applied Crystallography 2013, 46 (2), 461‑65.
 https://doi.org/10.1107/S0021889812051357.
 
 Adapted for pyama and pymatgen by Sylvian Cadars, sylvian.cadars@unilim.fr
@@ -770,7 +772,7 @@ class nanopdfData():
         self.calculate_ak()
         pdf_without_ripples = self.get_exact_pdf_without_ripples()
         self.add_termination_ripples(pdf_without_ripples)
-    
+
     def calculate_final_exact_pdf_from_structure(self, structure_or_file=None):
         """
         Calculate the total X-ray PDF for the given structure file or pymatgen structure
@@ -782,7 +784,7 @@ class nanopdfData():
             exact_pdf
         """
         self.set_system_info_from_structure(structure_or_file)
-            
+
         if self.print_performance:
             performance = {}
             tic = time.perf_counter()
@@ -1044,7 +1046,7 @@ class nanopdfData():
 
             if show_plot:
                 fig, ax = self.plot_exact_pdf(title=title, data_name=_data_name,
-                    show_experiment=True, show_difference=True, 
+                    show_experiment=True, show_difference=True,
                     expt_rel_y_shift=expt_rel_y_shift, diff_rel_y_shift=diff_rel_y_shift,
                     push_legend=push_legend)
         elif show_plot:
@@ -1054,7 +1056,7 @@ class nanopdfData():
             _nd.calculate_final_exact_pdf_from_structure(structure_or_file)
             _nd.calculate_difference_to_experiment()
             fig, ax = _nd.plot_exact_pdf(title=title, data_name=_data_name,
-                show_experiment=True, show_difference=True, 
+                show_experiment=True, show_difference=True,
                 expt_rel_y_shift=expt_rel_y_shift, diff_rel_y_shift=diff_rel_y_shift,
                 push_legend=push_legend)
 
@@ -1084,8 +1086,8 @@ class nanopdfData():
     def plot_exact_pdf(self, title=None, data_name=None, experimental_file=None,
                        experimental_title=None, show_experiment=False,
                        expt_rel_y_shift=0.0, show_difference=False,
-                       diff_rel_y_shift=-0.75, show_partials=False, 
-                       partials_rel_y_shift=None, rel_shift_between_partials=0.25, 
+                       diff_rel_y_shift=-0.75, show_partials=False,
+                       partials_rel_y_shift=None, rel_shift_between_partials=0.25,
                        push_legend=True):
         """
         Plot exact x-ray total scattering function, possibly with experiment
@@ -1113,7 +1115,7 @@ class nanopdfData():
                 Needs experimental_data defined via experimental_file
                 or the set_experiment_from_data_file() method.
             diff_rel_y_shift: float (default is -0.75)
-                Shift of difference plot with respect to simulation, 
+                Shift of difference plot with respect to simulation,
                 relative to the simulated intensity range.
             show_partials: bool (default is False)
                 Whether partial RDFs should be shown.
@@ -1135,7 +1137,7 @@ class nanopdfData():
                 self.calculate_final_exact_pdf_from_structure(self.structure)
             elif self.partials is not None:
                 self.calculate_final_exact_pdf_from_partials(self.partials)
-                
+
         fig, ax = plt.subplots()
         ax.plot(self.R, self.exactPDF)
         if isinstance(data_name, str):
@@ -1164,7 +1166,7 @@ class nanopdfData():
             fig, ax = self.add_difference_to_plot(fig, ax,
                                                   rel_y_shift=diff_rel_y_shift)
             lgd.append('Difference (RMSD = {:.3f})'.format(self.difference_rmsd))
-        
+
         if show_partials:
             if self.partials is None and self.structure is not None:
                 self.calculate_all_reduced_partial_RDFs(self.structure)
@@ -1176,9 +1178,9 @@ class nanopdfData():
                     tot_y_shift = y_max + 0.05 * (y_max - y_min)
                 else:
                     tot_y_shift = partials_rel_y_shift*(max(self.exactPDF) - min(self.exactPDF))
-                
+
                 atom_pairs = self.get_atom_pair_names()
-                y_shift = rel_shift_between_partials * max([max(partial) - min(partial) for 
+                y_shift = rel_shift_between_partials * max([max(partial) - min(partial) for
                                                             partial in self.partials])
                 for pair_index, partial in enumerate(self.partials):
                     ax.plot(self.R, partial + tot_y_shift)
@@ -1186,7 +1188,7 @@ class nanopdfData():
                     tot_y_shift += y_shift
             else:
                 self.trace('WARNINGS: No partials available for plot.')
-            
+
         if push_legend:
             ax.legend(lgd, loc='upper left', bbox_to_anchor=[1.05, 1.0])
             fig.tight_layout()
