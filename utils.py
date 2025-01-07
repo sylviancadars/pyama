@@ -13,6 +13,7 @@ from subprocess import call
 import sys
 import numpy as np
 
+
 def is_float(a_string):
     """
     Helper function to check if a string is a float
@@ -88,11 +89,27 @@ def get_pymatgen_structure(struct_or_file, struct_description=None):
     return structure, struct_description
 
 
-def get_ase_atoms(struct_or_file, struct_description=None):
+def get_ase_atoms(struct_or_file, struct_description=None,
+                  return_description=False):
     """
     Get an ASE Atoms object from a file or pymatgen Structure or Molecule
 
     Atoms object will be left untouched.
+
+    Args:
+        struct_or_file: pymatgen (I)Structure or (I)Molecule, str
+            structure or file name to be converted to ASE atoms
+        struct_description: str or None (default is None)
+            If None a description will be created automatically using formula
+            and origin.
+        return_description: bool (default is False).
+            If True the function will return a tuple of ASE Atoms and
+            description
+
+    Returns:
+        ASE Atoms
+        description: str
+            if return_description is True.
     """
     if struct_description is not None and not isinstance(struct_description, str):
         raise TypeError('struct_description shoulf be a str of None')
@@ -122,7 +139,11 @@ def get_ase_atoms(struct_or_file, struct_description=None):
                 atoms.get_chemical_formula())
     else:
         raise TypeError('struct_or_file should be a pymatgen structure or molecule, ASE Atoms or file name.')
-    return atoms, description
+
+    if return_description:
+        return atoms, description
+    else:
+        return atoms
 
 
 def visualize_structure(struct_or_file, viewer='ase'):
@@ -249,20 +270,20 @@ def sort_structure_by_frac_coord(structure_or_file, axis=2, reverse=False):
     structure.sort(lambda site: site.frac_coords[axis], reverse=reverse)
     return structure
 
-def get_pymatgen_struct_from_xyz(filename, lattice_or_cell_length=None, 
+def get_pymatgen_struct_from_xyz(filename, lattice_or_cell_length=None,
                                  get_cell_length_from_xyz_comment=True,
                                  verbosity=0):
     """
     Get a pymatgen structure from an xyz file
-    
+
     Args:
-        filename: str 
+        filename: str
             path to xyz file.
         lattice_or_cell_length: float, list, tuple, Lattice, or None (default is None)
             cell length (cubic cell) , list or tuple of lattice vectors,
             or pymatgen.core.Lattice. If known function returns a Molecule object
-        
-    
+
+
     Returns:
         pymatgen Structure or Molecule (if lattice_or_cell_length is None)
     """
@@ -270,7 +291,7 @@ def get_pymatgen_struct_from_xyz(filename, lattice_or_cell_length=None,
     if lattice_or_cell_length is None:
         return pmg_mol
     if isinstance(lattice_or_cell_length, float):
-        lattice = [[lattice_or_cell_length, 0., 0.], 
+        lattice = [[lattice_or_cell_length, 0., 0.],
                     [0., lattice_or_cell_length, 0.],
                     [0., 0., lattice_or_cell_length]]
     elif isinstance(lattice_or_cell_length, Lattice):
@@ -279,19 +300,19 @@ def get_pymatgen_struct_from_xyz(filename, lattice_or_cell_length=None,
         lattice = Lattice(lattice_or_cell_length)
     if verbosity > 0:
         print('Trying to build structure with lattice:\n', lattice)
-    pmg_struct = pmg_struct = Structure(lattice, pmg_mol.species, 
-                                        coords_are_cartesian=True, 
+    pmg_struct = pmg_struct = Structure(lattice, pmg_mol.species,
+                                        coords_are_cartesian=True,
                                         coords=pmg_mol.cart_coords)
     return pmg_struct
 
 
-def convert_xyz_to(xyz_file_name, export_file_name, lattice_or_cell_length, 
+def convert_xyz_to(xyz_file_name, export_file_name, lattice_or_cell_length,
                    fmt=None, verbosity=0):
     """
     Convert xyz file to a structure file using pymatgen
 
     Args:
-        xyz_file_name: str 
+        xyz_file_name: str
             path to input xyz file.
         export_file_name: str
             path to output file. Extension will be used to identify format
@@ -300,17 +321,81 @@ def convert_xyz_to(xyz_file_name, export_file_name, lattice_or_cell_length,
             cell length (cubic cell) , list or tuple of lattice vectors,
             or pymatgen.core.Lattice. If known function returns a Molecule object
         fmt: str or None (default is None):
-            Export file format: e.g. 'cif', 'poscar', etc. Non case-sensitive. 
+            Export file format: e.g. 'cif', 'poscar', etc. Non case-sensitive.
             (see known formats in pymatgen Structure.to() method)
-    
+
     Returns:
         file name or None
     """
-    
+
     pmg_struct = get_pymatgen_struct_from_xyz(xyz_file_name, lattice_or_cell_length)
     pmg_struct.to(fmt=fmt, filename=export_file_name)
     if verbosity > 0:
         print('Structure file stored as {}.'.format(export_file_name))
 
 
+def visualize_clusters(structure, site_indexes, r_cut=4.0, verbosity=1):
+    """
+    TO BE COMPLETED
+    """
+    def get_type(site):
+        return site.species.elements[0].name
+
+    """
+    if folder is None:
+        folder = os.path.join(os.getcwd(), 'clusters')
+    try:
+        os.mkdir(clusters_dir)
+    except FileExistsError:
+        pass
+    """
+
+    clusters = {'center_types': [], 'center_indexes': [], 'molecules': []}
+    for site_index in site_indexes:
+        site = structure.sites[site_index]
+        site_type = get_type(site)
+        if verbosity >= 3:
+            print('Extracting cluster from site {}: {}'.format(site_index, site_type))
+        nbrs = structure.get_neighbors(site, r_cut)
+        if verbosity >= 3:
+            print('Site {} of type {} has {} neighbors within {} \u212B'.format(
+                site_index, site_type, len(nbrs), r_cut))
+
+        cluster = Molecule(species=[site.species] + [nbr.species for nbr in nbrs],
+                           coords=[site.coords] + [nbr.coords for nbr in nbrs])
+
+        visualize_structure(cluster)
+
+
+def get_indexes_by_type(structure_or_atoms, verbosity=0):
+    """
+    Get a dictionary of indexes by type in a pymatgen (I)Structure or ASE Atoms
+
+    Args:
+        structure_or_atoms: pymatgen Structure, IStructure, ASE Atoms
+            The structure to be considered
+        verbosity:
+            verbosity level
+    Returns:
+        indexes_by_type: dict
+            A dictionary representing with atom types as keys and lists of
+            site indexes as values.
+    """
+
+    if isinstance(structure_or_atoms, Atoms):
+        atoms = structure_or_atoms
+    else:
+        atoms = get_ase_atoms(structure_or_atoms)
+
+    atom_types = list(set(atoms.get_chemical_symbols()))
+    indexes_by_type = {atom_type: [] for atom_type in atom_types}
+    for atom_type in atom_types:
+        for site_index, atom in enumerate(atoms):
+            if atom.symbol == atom_type:
+                indexes_by_type[atom_type].append(site_index)
+
+    if verbosity >= 1:
+        print('indexes_by_type = ', indexes_by_type)
+
+    return indexes_by_type
 

@@ -28,16 +28,17 @@ import structureComparisonsPkg.distanceTools as dt
 import json
 
 
-def parse_individuals_file(file_name, verbosity=1, skip_magmoment_type=True):
+def parse_individuals_file(file_name, verbosity=1, skip_magmoment_type=True,
+                           na_value = 1.0e6):
     """
-    Parse the Individuals output file of USPEX 
-    
-    Tested for USPEX version 10.4 on fixed-composition bulk (calculationType 300) 
+    Parse the Individuals output file of USPEX
+
+    Tested for USPEX version 10.4 on fixed-composition bulk (calculationType 300)
     and "2D-crystal" or thin-film calculations (calculationType -200)
-    
-    Parsed data are recovered in the form of a dictionary (which can then be 
+
+    Parsed data are recovered in the form of a dictionary (which can then be
     passed into a pandas dataframe, for example).
-    
+
     Args:
         file_name: str
             path to the Individuals file to be parsed
@@ -46,17 +47,19 @@ def parse_individuals_file(file_name, verbosity=1, skip_magmoment_type=True):
         skip_magmoment_type: bool (default is True)
             Should be set to True unless  magnetic moments are used in the calculation.
             This is critical for "2D-crystal" or thin-film calculations (calculationType -200)
-            because (at least in USPEX v. 10.4) this property appears in the head of the 
+            because (at least in USPEX v. 10.4) this property appears in the head of the
             Individual files but no corresponding values are parsed.
-    
+
     Returns:
         individuals_dict: dict
             Dictionnary with keys corresponding to the properties listed in
             USPEX Individuals output file and values will be lists or
             numpy arrays containing the corresponding property values
             for each structure. Each list of array will have the number
-            of structures as first dimension length. 
+            of structures as first dimension length.
     """
+    # TODO: define default value in case of N/A is found in Individuals file
+    # currently we use na_value
     if verbosity >= 1:
         print('Parsing data from file : ', file_name)
     with open(file_name, 'r') as f:
@@ -98,10 +101,18 @@ def parse_individuals_file(file_name, verbosity=1, skip_magmoment_type=True):
 
         for key, val in zip(property_names, values):
             individuals_dict[key].append(val)
-            
+
 
     if verbosity >= 3:
         print('individuals_dict = {}', individuals_dict)
+
+    if 'N/A' in individuals_dict['Fitness']:
+        # Cure N/A fitnesses in case all but N/A values are equal to Enthalpy values
+        # (the default in fixed-composition runs)
+        if all([individuals_dict['Fitness'][i] == individuals_dict['Enthalpy'][i]
+                for i, v in enumerate(individuals_dict['Fitness']) if v != 'N/A']):
+            individuals_dict['Fitness'] = individuals_dict['Enthalpy']
+        # TODO: Automatically-correct fitness for variable-composition runs
 
     # Convert to appropriate formats:
     for prop in property_names:
@@ -109,7 +120,11 @@ def parse_individuals_file(file_name, verbosity=1, skip_magmoment_type=True):
             individuals_dict[prop] = [int(val) for val in individuals_dict[prop]]
         if prop in ['Enthalpy', 'Volume', 'Density', 'Thickness', 'Surf_Area', 'Spec_surf_area',
                     'Fitness', 'Q_entr', 'A_order', 'S_order']:
-            individuals_dict[prop] = [float(val) for val in individuals_dict[prop] if val != 'N/A']
+            for index, val in enumerate(individuals_dict[prop]):
+                if val != 'N/A':
+                    individuals_dict[prop][index] = float(val)
+                else:
+                    individuals_dict[prop][index] = na_value
             # or directly convert in numpy array ?
         if prop in ['Composition', 'KPOINTS']:
             individuals_dict[prop] = [[int(val) for val in _list] for _list in individuals_dict[prop]]
@@ -123,7 +138,7 @@ class uspexStructuresData():
                  r=None, sigma=0.02, r_max=8.0, r_steps=512, verbosity=1):
 
         self.verbosity = verbosity
-        
+
         # Initialization of distance matrix data
         self.distance_data  = dt.distanceMatrixData(R=r, sigma=sigma,
             Rmax=r_max, Rsteps=r_steps)
@@ -147,7 +162,7 @@ class uspexStructuresData():
         # initilize distance data with provided paremeters
         self.set_distance_parameters(r=r, sigma=sigma, r_max=r_max, r_steps=r_steps)
         self.distance_matrix = None  # To be defined when necessary
-        
+
         # End of initialization function
 
     def as_dict(self):
@@ -169,7 +184,7 @@ class uspexStructuresData():
             'numbersOfAtomsOfEachType', 'numbersOfAtoms',
             'enthalpies', 'volumes', 'densities',
             'fitnesses', 'kpoints', 'symmGroupNb',
-            'Q_entr', 'A_order', 'S_order', 'distance_matrix', 
+            'Q_entr', 'A_order', 'S_order', 'distance_matrix',
             'individuals_dict',
         ]
         for attr_name in attributes:
@@ -179,7 +194,7 @@ class uspexStructuresData():
             elif isinstance(attribute, (int, str, list, float)):
                 mydict[attr_name] = attribute
 
-            # TODO: implement distance_data to dct conversion
+            # TODO: implement distance_data to dict conversion
             # Requires that distanceMatrixData aso has an as_dict method
         return mydict
 
@@ -220,7 +235,7 @@ class uspexStructuresData():
         self.distance_data  = dt.distanceMatrixData(R=r, sigma=sigma,
             Rmax=r_max, Rsteps=r_steps)
 
-    def load_uspex_structure_data(self, fileOrDirectoryName, 
+    def load_uspex_structure_data(self, fileOrDirectoryName,
                                   set_volumes_and_densities=False, **kwargs) :
         """
         Reading structure IDs, enthalpies, generation number, volumes, etc. from Individuals file
@@ -273,8 +288,8 @@ class uspexStructuresData():
         self.creationMethods = individuals_dict['Origin']
         self.numbersOfAtomTypes = np.empty(self.nbOfStructures,dtype=int)
         self.numbersOfAtomsOfEachType = np.asarray(individuals_dict['Composition'])
-        self.numbersOfAtoms = np.sum(self.numbersOfAtomsOfEachType)
-        self.enthalpies = np.asarray(individuals_dict['ID'])
+        self.numbersOfAtoms = np.sum(self.numbersOfAtomsOfEachType, axis=1)
+        self.enthalpies = np.asarray(individuals_dict['Enthalpy'])
         if 'Volume' in individuals_dict.keys():
             self.volumes = np.asarray(individuals_dict['Volume'])
         else:
@@ -293,17 +308,17 @@ class uspexStructuresData():
         self.S_order = np.asarray(individuals_dict['S_order'])
 
         self.individuals_dict = individuals_dict
-        
+
         if (self.volumes is None or self.densities is None
             ) and set_volumes_and_densities:
             self.set_all_volumes_and_densities()
-        
+
 
     # end of method get_uspex_structures_data
 
     def set_all_volumes_and_densities(self):
         """
-        Load individual structures to retrieve volume and density in case 
+        Load individual structures to retrieve volume and density in case
         """
         structures = get_structures_from_IDs(self.IDs)
         self.volumes = np.zeros(self.nbOfStructures,dtype=float)
@@ -316,21 +331,23 @@ class uspexStructuresData():
         """
         get a list of volumes in Angstrom^3 from IDs
         """
-        structures = get_structures_from_IDs(self.IDs)
+        structures = self.get_structures_from_IDs(IDs)
         return [float(structure.volume) for structure in structures]
-    
+
     def get_densities_from_IDs(self, IDs):
         """
         get a list of densities in g.cm-3 from IDs
         """
-        structures = get_structures_from_IDs(self.IDs)
+        structures = self.get_structures_from_IDs(IDs)
         return [float(structure.density) for structure in structures]
-    
+
     # Step 1 : read energies and structure IDs from USPEX output files ()
     # characteristics of the different structures (structures IDs, enthalpies and possibly other parameters) should read from file Individuals
     def load_uspex_structure_data_old(self,fileOrDirectoryName,**kwargs) :
         """
         Reading structure IDs, enthalpies, generation number, volumes, etc. from Individuals file
+
+        OBSOLETE. TO BE REMOVED. USE load_uspex_structure_data instead.
 
         Parameters :
             fileOrDirectoryName : Name of a results[X] directory containing the output files of a uspex run. The directory should contain a "Individuals" file.
@@ -563,7 +580,11 @@ class uspexStructuresData():
         structureID = self.make_single_value_if_list_of_single_element(structureID)
         if not extract_poscar_file:
             # read individual structure from gatheredPOSCARS file
-            [poscar] = self.get_poscars_from_IDs([structureID])
+            try:
+                [poscar] = self.get_poscars_from_IDs([structureID])
+            except ValueError as e:
+                raise ValueError('{} : poscar could not be loaded for structure ID {}'.format(
+                    e, structureID))
             return poscar.structure
         else:
             try :
@@ -609,17 +630,23 @@ class uspexStructuresData():
         poscars = []
         reading_structure = False
         poscar_lines = []
+        extracted_ids = []
         for line in lines:
             try:
                 if line[0:2] == 'EA':
                     if reading_structure:
                         # finish reading a structure
-                        poscars.append(Poscar.from_str(''.join(poscar_lines)))
+                        try:
+                            poscars.append(Poscar.from_str(''.join(poscar_lines)))
+                        except AttributeError:  # Keep compatibility with older pymatgen versions
+                            poscars.append(Poscar.from_string(''.join(poscar_lines)))
+                        extracted_ids.append(currentStructID)
                         reading_structure = False
                         if len(poscars) >= structureIDs.size:
                             self.print('Poscar instances have been obtained from all '
                                        'requested  structures.', verb_th=2)
                             break
+                    # start reading structure
                     currentStructID = int(line[2:].split()[0])
                     if currentStructID in structureIDs:
                         # Create POSCAR file and write first line
@@ -630,8 +657,15 @@ class uspexStructuresData():
                 pass  # len(line) is smaller than 2
             if reading_structure :
                 poscar_lines.append(line)
-        if self.IDs[-1] in structureIDs:
-            poscars.append(Poscar.from_str(''.join(poscar_lines)))
+        if self.IDs[-1] in structureIDs and self.IDs[-1] not in extracted_ids:
+            # In principle that last structure is not stored by the procedure above,
+            # unless Individuals file contains less structures than the gatherPOSCARS file.
+            # This situation can happen if structures with fitness value N/A are omitted
+            # or simply deleted from the file.
+            try:
+                poscars.append(Poscar.from_str(''.join(poscar_lines)))
+            except AttributeError:  # Keep compatibility with older pymatgen versions
+                poscars.append(Poscar.from_string(''.join(poscar_lines)))
         return poscars
 
     # end of method get_structures_from_IDs
@@ -860,6 +894,35 @@ class uspexStructuresData():
         return selectedRanks
 
 
+    def get_IDs_sorted_by(self, sort_by:str='fitness',
+                          sort_order:str='ascending'):
+        """
+        Get IDs sorted by fitness (the default or other such as enthalpy_by_atom)
+
+        Args:
+            sort_by: str (default is 'fitness')
+                parameter to use for sorting IDs.
+                other options are :
+                enthalp... or energ... : enthalpy by atom
+            sort_order: str (default is 'ascending')
+
+        returns sorted_ids
+        """
+        if sort_by == 'fitness':
+            sorted_indexes = np.argsort(self.fitness)
+        elif 'enthalp' or 'energ' in sort_by:
+            sorted_indexes = np.argsort(self.enthalpies / self.numbersOfAtoms)
+        else:
+            raise ValueError('sort_by {} is not implemented.'.format(sort_by))
+
+        if sort_order in ['descending', 'reverse']:
+            sorted_indexes = sorted_indexes[::-1]
+
+        sorted_IDs = self.IDs[sorted_indexes]
+
+        return sorted_IDs
+
+
     def plot_enthalpies(self,structureIDs,enthalpyUnit:str='eV',
                         relativeEnthalpies:bool=True,systemName:str='',
                         **kwargs):
@@ -910,7 +973,7 @@ class uspexStructuresData():
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.scatter(x,y)
+        ax.plot(x, y, 'o', label='enthalpies')
         title = 'Structure enthalpies vs fitness rank'
         if systemName != '' :
             title=systemName+' : '+title
@@ -918,9 +981,8 @@ class uspexStructuresData():
         ax.set(xlabel='Structure rank (by fitness)',**kwargs)
         # TODO : change y axis label as a function of
         ax.set(ylabel=yLabel + ' (' + yUnit + ')')
-        plt.show()
 
-        return fig
+        return fig, ax
 
 
     def printTable(self,structureIDs):
@@ -1151,7 +1213,6 @@ class uspexStructuresData():
         else:
             return selected_ids, seed
 
-
     def get_good_structures_ids(self):
         """
         Get the IDs of structures listed in the goodStructure file
@@ -1161,20 +1222,68 @@ class uspexStructuresData():
         Returns:
             A list of id numbers.
         """
-        array = np.genfromtxt('/data/USPEX/SiCN/Si12C10N10H8_v10.4/results1/goodStructures',
+        array = np.genfromtxt(os.path.join(self.resultsDirectoryName, 'goodStructures'),
                               skip_header=2)
         ids = [int(row[0]) for row in array]
         return ids
+
+    def get_good_structures_average_density(self, return_std:bool=False):
+        """
+        Get the average density (g.cm-3) of the best structures listed in the goodStructures file
+
+        Args:
+            return_std: bool (default is False)
+                Wheter the deviation of densities over structures in goodStructures file
+                shall be returned along with the average density.
+        Returns:
+            density of return_std is False, a tuple of density and density_std otherwise.
+        """
+        structures = self.get_structures_from_IDs(self.get_good_structures_ids())
+        density = np.mean([s.density for s in structures])
+        std_string = None
+        if return_std:
+            density_std = np.std([s.density for s in structures])
+            std_string = ' +/- {:.3f}'.format(density_std)
+        self.print('Average density of structures in goodStructures file is {:.3f}{} g.cm-3'.format(
+            density, std_string), verb_th=1)
+        if return_std:
+            return density, density_std
+        else:
+            return density
+
+    def get_good_structures_average_volume(self, return_std:bool=False):
+        """
+        Get the average volume (A^3) of the best structures listed in the goodStructures file
+
+        Args:
+            return_std: bool (default is False)
+                Wheter the deviation of volumes over structures in goodStructures file
+                shall be returned along with the average volume.
+        Returns:
+            volume of return_std is False, a tuple of volume and volume_std otherwise.
+        """
+        structures = self.get_structures_from_IDs(self.get_good_structures_ids())
+        volume = np.mean([s.volume for s in structures])
+        std_string = None
+        if return_std:
+            volume_std = np.std([s.volume for s in structures])
+            std_string = ' +/- {:.2f}'.format(volume_std)
+        self.print('Average volume of structures in goodStructures file is {:.2f}{} A^3'.format(
+            volume, std_string), verb_th=1)
+        if return_std:
+            return volume, volume_std
+        else:
+            return volume
 
     def get_structure_IDs_from_property(self, filter_dict):
         """
         filter_dict example:
         {'Thickness/Volume/Enthalpy' : {'lt/gt/le/ge/in': value/list}}
-        
+
         WARNING: CASE SENSITIVE
         """
         def test(value, operator, filter_value):
-            
+
             if operator.lower() in ['<', 'lt']:
                 test = True if value < filter_value else False
             elif operator.lower() in ['<=', 'le']:
@@ -1191,7 +1300,7 @@ class uspexStructuresData():
                 raise ValueError('Unkown selection operator')
             self.print('Testing {} {} {}: {}'.format(value, operator, filter_value, test), verb_th=3)
             return test
-           
+
         available_properties = list(self.individuals_dict.keys())
         # TODO: add volume or density in case they are not in individuals_dict
         filter_properties = list(filter_dict.keys())
@@ -1199,25 +1308,25 @@ class uspexStructuresData():
         for filter_property in filter_properties:
             if filter_property in available_properties:
                 for operator, filter_value in filter_dict[filter_property].items():
-                    matching_IDs = [self.IDs[i] for i, v in 
-                                    enumerate(self.individuals_dict[filter_property]) 
+                    matching_IDs = [self.IDs[i] for i, v in
+                                    enumerate(self.individuals_dict[filter_property])
                                     if test(v, operator, filter_value)]
                     self.print('matching_IDs = {}'.format(matching_IDs), verb_th=3)
-                    filtered_IDs = filtered_IDs.intersection(matching_IDs)                
-                    
+                    filtered_IDs = filtered_IDs.intersection(matching_IDs)
+
         self.print('{} structure IDs have been selected.'.format(len(filtered_IDs)), verb_th=1)
-        
+
         filtered_IDs = list(filtered_IDs)
         filtered_IDs.sort()
         self.print(filtered_IDs, verb_th=2)
-        
+
         return filtered_IDs
 
     def get_input_folder(self):
         return os.path.split(os.path.abspath(self.resultsDirectoryName))[0]
 
-    def export_as_seed_or_anti_seed(self, structureIDs, destination='Seeds', 
-                                    output_basename='POSCARS', write_mode='a', 
+    def export_as_seed_or_anti_seed(self, structureIDs, destination='Seeds',
+                                    output_basename='POSCARS', write_mode='a',
                                     use_initial=False):
         """
         Copy POSCAR files selected by IDs to (Anti)Seeds/POSCARS
@@ -1233,7 +1342,7 @@ class uspexStructuresData():
                 Write mode of the output file ('a' to append, 'w' to overwrite)
             use_initial: bool (default is False)
                 Whether initial rather than relaxed structures should be used.
-            
+
         Returns:
             destination_file: str
                 absolute output file path
@@ -1242,9 +1351,9 @@ class uspexStructuresData():
             destination_folder_basename = 'AntiSeeds'
         elif 'seed' in destination.lower():
             destination_folder_basename = 'Seeds'
-        
+
         poscars = self.get_poscars_from_IDs(structureIDs, use_initial=use_initial)
-        
+
         destination_file = os.path.join(self.get_input_folder(), destination_folder_basename, output_basename)
         with open(destination_file, write_mode) as f:
             for poscar in poscars:
@@ -1254,10 +1363,10 @@ class uspexStructuresData():
                     if index >= 8 and len(line.split()) > 3:
                         poscar_lines[index] = ''.join(['{:>15}'.format(s) for s in line.split()[:3] ])
                 f.writelines([line + '\n' for line in poscar_lines])
-        
+
         self.print('{} POSCAR files have been written to file {}.'.format(
             len(poscars), destination_file), verb_th=1)
-    
+
         return destination_file
 
 # end of class uspexStructuresData

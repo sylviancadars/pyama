@@ -4,8 +4,8 @@ Calculation of exact X-ray total scattering
 
 Olivier Masson 05/05/2016 olivier.masson@unilim.fr
 Masson, Olivier, and Philippe Thomas.
-« Exact and Explicit Expression of the Atomic Pair Distribution Function as
-Obtained from X-Ray Total Scattering Experiments ».
+«Exact and Explicit Expression of the Atomic Pair Distribution Function as
+Obtained from X-Ray Total Scattering Experiments».
 Journal of Applied Crystallography 46, nᵒ 2 (1 avril 2013): 461‑65.
 https://doi.org/10.1107/S0021889812051357.
 
