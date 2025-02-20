@@ -15,6 +15,12 @@ import sys
 import numpy as np
 
 
+# TOBETESTED... order between hexagonal and thombohedral is not obvious
+# From highest to lowest constraints.
+LATTICE_SYSTEMS_HIERARCHY = ['cubic', 
+                             'tetragonal', 'rhombohedral', 'hexagonal', 
+                             'orthorhombic', 'monoclinic', 'triclinic']
+
 def is_float(a_string):
     """
     Helper function to check if a string is a float
@@ -62,7 +68,8 @@ class BaseDataClass():
             self._output_text = []
 
 
-def get_pymatgen_structure(struct_or_file, struct_description=None):
+def get_pymatgen_structure(struct_or_file, struct_description=None, 
+                           return_description=False):
     if isinstance(struct_or_file, str):
         structure = Structure.from_file(struct_or_file)
         if struct_description is None:
@@ -86,7 +93,8 @@ def get_pymatgen_structure(struct_or_file, struct_description=None):
     else:
         raise TypeError('get_pymatgen_structure function does not work for type {}.'.format(
             type(struct_or_file)))
-    return structure, struct_description
+    
+    return (structure, struct_description) if return_description else structure
 
 
 def get_ase_atoms(struct_or_file, struct_description=None,
@@ -172,6 +180,36 @@ def visualize_structure(struct_or_file, viewer='ase'):
     if tmp_file_name is not None:
         if os.path.isfile(tmp_file_name):
             os.remove(tmp_file_name)
+
+
+def get_compact_formula(struct_or_file):
+    """
+    Get a compact formula for printout purposes.
+    
+    Uses the same atom_type ordering as in pymatgen 
+    composition, based on the IUPAC formula.
+    
+    NOT TESTED FOR STRUCTURES CONTAINING PARTIAL OCCUPANCIES
+    
+    Args:
+        struct_or_file: coordinate file, pymatgen (I)Structure or ASE Atoms
+        
+    Returns:
+        compact_formula: str
+    """
+    structure = get_pymatgen_structure(struct_or_file)
+    compact_formula = ''
+    for atom_type, amount in structure.composition.as_dict().items():
+        if amount == 1:
+            amount_str = ''
+        elif not amount % 1:
+            amount_str = '{}'.format(int(amount))
+        else:
+            amount_str = '{}'.format(amount)
+        compact_formula += f"{atom_type}{amount_str}"
+    
+    return compact_formula
+
 
 def convert_dispersion_coeff(coeff_value, coeff_name='C_6',
                              input_energy_unit='J',
@@ -413,7 +451,8 @@ def is_unitary_matrix(m, **kwargs):
     Returns:
         bool
     """
-    return np.allclose(m, m.dot(m.T.conj()), **kwargs)
+    _m = np.array(m)
+    return np.allclose(_m, _m.dot(_m.T.conj()), **kwargs)
 
 
 def has_tetragonal_shape(cell_angles, cell_lengths,
@@ -638,8 +677,8 @@ def get_cell_lengths_and_angles(structure_or_lattice):
 
 
 def get_lattice_system_with_unique_param(structure_or_lattice,
-                                       return_as_dict=True,
-                                       verbosity=1, **kwargs,):
+                                         return_as_dict=True,
+                                         verbosity=1, **kwargs,):
     """
     Determines if a crystal cell is monoclinic based on its angles and lengths.
 
@@ -682,15 +721,11 @@ def get_lattice_system_with_unique_param(structure_or_lattice,
     cell_lengths = cell_lengths_and_angles[:3]
     cell_angles = cell_lengths_and_angles[3:]
 
-    # TOBETESTED... order between hexagonal and thombohedral is not obvious
-    lattice_systems_hierarchy = ['cubic', 'tetragonal', 'orthorhombic', 'hexagonal',
-                                 'rhombohedral', 'monoclinic', 'triclinic']
-
     cell_change_perm = np.array(cyclic_permutations(
-        [[0, 0, 1], [0, 1, 0], [0, 1, 0]], direction='left'))
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1]], direction='left'))
 
     possible_lattice_systems = []
-    for i, (lengths_perm, angles_perm) in enumerate(
+    for perm_index, (lengths_perm, angles_perm) in enumerate(
             zip(cyclic_permutations(cell_lengths),
                 cyclic_permutations(cell_angles))):
 
@@ -699,11 +734,11 @@ def get_lattice_system_with_unique_param(structure_or_lattice,
         a, b, c = lengths_perm
         alpha, beta, gamma = angles_perm
 
-        _swap_axes_matrix = cell_change_perm[i]
+        _swap_axes_matrix = cell_change_perm[perm_index]
 
         if verbosity >= 2:
             print('Permutation index {}: cell lengths {} and angles {}'.format(
-                i, lengths_perm, angles_perm))
+                perm_index, lengths_perm, angles_perm))
 
         lattice_system = get_lattice_system_from_cell_parameters(
             a, b, c, alpha, beta, gamma, verbosity=0, **kwargs)
@@ -712,32 +747,33 @@ def get_lattice_system_with_unique_param(structure_or_lattice,
         if lattice_system in ['triclinic', 'orthorhombic'] :
             possible_lattice_systems.append({
                 'name': lattice_system,
-                'unique_param': None,
-                'swap_axes_matrix': _swap_axes_matrix})
+                'unique_parameter': None,
+                'swap_axes_matrix': _swap_axes_matrix, 
+                'cell_parameters': (a, b, c, alpha, beta, gamma)})
 
         elif lattice_system in ['hexagonal', 'tetragonal', 'monoclinic']:
-            perm_index = i
             if lattice_system in ['hexagonal',  'tetragonal']:
                 unique_param = ('c', 'a', 'b')[perm_index]
             else:
                 unique_param = ('β', 'γ', 'α')[perm_index]
 
-            if verbosity >= 1:
+            if verbosity >= 2:
                 print(('Axes permutation index {}: Cell parameters are '
                        'compatible with a {}-unique {} lattice.').format(
                     perm_index, unique_param, lattice_system))
 
             possible_lattice_systems.append({
                 'name': lattice_system,
-                'unique_param': unique_param,
-                'swap_axes_matrix': _swap_axes_matrix})
+                'unique_parameter': unique_param,
+                'swap_axes_matrix': _swap_axes_matrix, 
+                'cell_parameters': (a, b, c, alpha, beta, gamma)})
 
         else:
             # Cubic or rhombohedral crystal systems cannot be mistaken
             # for others. Exit.
             print(('Axes permutation index {}: Cell parameters are '
                        'compatible with a {} lattice.').format(
-                    i, lattice_system))
+                    perm_index, lattice_system))
 
             if return_as_dict:
                 return {'lattice_system': lattice_system,
@@ -750,25 +786,28 @@ def get_lattice_system_with_unique_param(structure_or_lattice,
         print('possible_lattice_systems = ', possible_lattice_systems)
 
     # Choose lattice system with best rank in the hierarchy.
-    lowest_lattice_index = len(lattice_systems_hierarchy)
+    lowest_lattice_index = len(LATTICE_SYSTEMS_HIERARCHY)
     unique_param = None
     for _lattice_system in possible_lattice_systems:
-        i = lattice_systems_hierarchy.index(_lattice_system['name'])
+        i = LATTICE_SYSTEMS_HIERARCHY.index(_lattice_system['name'])
         if i < lowest_lattice_index:
             lattice_system = _lattice_system['name']
-            unique_param = _lattice_system['unique_param']
+            unique_param = _lattice_system['unique_parameter']
             swap_axes_matrix = _lattice_system['swap_axes_matrix']
             lowest_lattice_index = i
+            cell_parameters = _lattice_system['cell_parameters']
 
     if verbosity >= 1:
-        print(('The highest-symmetry lattice system compatible with '
+        print(('The most-contrained lattice system compatible with '
                'the provided lattice is {}{}.').format(
             lattice_system,
             ' ({}-unique)'.format(unique_param) if unique_param else ''))
-
+        
+        print(f'obtained with cell parameters {cell_parameters}.')
+    
     if return_as_dict:
         return {'lattice_system': lattice_system,
-                'unique_param': unique_param,
+                'unique_parameter': unique_param,
                 'swap_axes_matrix': swap_axes_matrix}
     else:
         return lattice_system
@@ -828,7 +867,9 @@ def get_lattice_system_from_sym_or_cell(structure, return_as_dict=True,
     """
     Get the lattice system of a pymatgen structure based on its internal symmetries or its cell paramaters
 
-    Symmetry search uses pymatgen SpaceGroupAnalyzer, which usess spglib.
+    Symmetry search uses pymatgen SpacegroupAnalyzer, which usess spglib.
+
+    UPDATE COMMENTS
 
     Args:
         structure: pymatgen Structure
@@ -842,137 +883,114 @@ def get_lattice_system_from_sym_or_cell(structure, return_as_dict=True,
             isclose and allclose functions (atol, rtol, etc.)
 
     Returns:
-        lattice_system:
-        is_conventional: bool
+        lattice_system
+        OR
+        lattice_system_dict
     """
 
-    # Convert to conventional when relevant.
+    # Get primitive and convention structures and space group based on symmetry
     sga = SpacegroupAnalyzer(structure)
-
-    # Inititialize crystal_systrm_dict values
+    primitive_structure = sga.get_primitive_standard_structure()
+    conventional_structure = sga.get_conventional_standard_structure()
+    lattice_system = sga.get_lattice_type()
+    
+    if verbosity >= 1:
+        print(('Searching Bravais lattice system compatible with the cell ' 
+               'parameters of {}-atom {} structure with space group {} ({}).'
+               ).format(structure.num_sites, get_compact_formula(structure), 
+                        sga.get_space_group_symbol(), sga.get_space_group_number()))
+    
+    # Inititialize crystal_system_dict values
     unique_param = None
     swap_axes_matrix = None
-            
-    if sga.get_space_group_number() == 1:
-        _structure = structure
-        change_to_conventional = False
-
-    """
-    TODO: better yet:
-        If space group is not P1:
-            1. create primitive and conventional cell
-            2. check whether (a) primitive or (b) conventional satisfy
-               lattice system cell angles
-            3. if (2a) or (2b) is True, recommand using the 
-               corresponding structure (in this priority order).
-            
-    """
-
-    else:
-        conventional_structure = sga.get_conventional_standard_structure()
-        # TODO: change_to_conventional should only be applied for cases
-        #       where it is essential to keep the right angles fixed
-        #       based on Bravais lattice.
-        change_to_conventional = not np.allclose(conventional_structure.lattice.matrix,
-                                                  structure.lattice.matrix, **kwargs)
-
-        lattice_system = sga.get_lattice_type()
-        
-        """
-        TODO: In the case of a Rhombohedral lattice system, the conventional cell
-        is similar the hexagonal system and identified as such by the 
-        get_lattice_system_from_cell_parameters function. This means that in the particular case of this system, we should not switch to conventional cell.
-        
-        if lattice_system == 'rhombohedral':
-            change_to_conventional = True only if vol(conventional) vol()
-            
-        """
-        if lattice_system in ['cubic', 'rhombohedral']:
-            
-            lattice_system_dict = {
-                'lattice_system': lattice_system,
-                'change_to_primitive': True,
-                'change_to_conventional': False,
-                'unique_param': None,
-                'swap_axes_matrix': None,
-            }
-            
-            if verbosity >= 1:
-                print(('{}-atom {} structure has a {} Bravais lattice '
-                       'system based on pymatgen SpacegroupAnalyzer. Primitive'
-                       'cell should be use to impose corresponding cell constraints.'
-                       ).format(structure.num_sites, structure.formula, 
-                                ))
-            
-            return lattice_system_dict if return_as_dict else lattice_system
-
-        # TODO: check whether cubic lattice should also use the primitive cell.
-         
-        elif lattice_system != 'triclinic':
-            if verbosity >= 1:
-                print('Lattice type {} identified with pymatgen SpacegroupAnalyzer'.format(
-                    lattice_system))
-            
-            if lattice_system in ['hexagonal',  'tetragonal', 'monoclinic']: 
-                swap_axes_matrix_perm = cyclic_permutations([[1, 0, 0], 
-                                                             [0, 1, 0],
-                                                             [0, 0, 1]])
-                lengths_perm = cyclic_permutations(conventional_structure.lattice.lengths)
-                angles_perm = cyclic_permutations(conventional_structure.lattice.angles)
-                
-                for perm_index in range(3):
-                    a, b, c = lengths_perm[perm_index]
-                    alpha, beta, gamma = angles_perm[perm_index]
-                    if (lattice_system in ['hexagonal', 'tetragonal']
-                        and np.isclose(a, b, **kwargs) 
-                        and not np.isclose(a, c, **kwargs)):
-                        unique_param = ['c', 'a', 'b'][perm_index]
-                        swap_axes_matrix = [perm_index]
-                        break
-                    elif (lattice_system == 'monoclinic'
-                          and np.isclose(alpha, gamma, **kwargs)
-                          and not np.isclose(alpha, beta, **kwargs)):
-                        unique_param = ['beta', 'gamma', 'alpha'][perm_index]
-                        swap_axes_matrix = [perm_index]
-                        break
-                                    
-            lattice_system_dict = {
-                'lattice_system': lattice_system,
-                'change_to_conventional': change_to_conventional,
-                'unique_param': unique_param,
-                'swap_axes_matrix': swap_axes_matrix,
-            }
-
-            if verbosity >= 2:
-                print('lattice_system_dict = ', lattice_system_dict)
-
-            return lattice_system_dict if return_as_dict else lattice_system
-
-        if verbosity >= 2:
-            print('Pymatgen SpacegroupAnalyzer identified the lattice type as triclinic. '
-                  'Lattice parameters will be used to further explore lattice types.')
-
-        _structure = structure if not change_to_conventional else conventional_structure
-
-    if change_to_conventional and verbosity >= 1:
-        print(('{}-atom {} conventional cell representation (vs {} in initial '
-            'cell) will be used to identify the lattice type.').format(
-                _structure.num_sites, structure.num_sites, _structure.formula))
-
-    if verbosity >= 2:
-        print('Looking for Bravais lattice system based on cell '
-              'parameters : {}'.format(
-            _structure.lattice.lengths + _structure.lattice.angles))
-
-    lattice_system_dict = get_lattice_system_with_unique_param(
-        _structure, return_as_dict=True, verbosity=verbosity, **kwargs)
-
-    lattice_system_dict['change_to_conventional'] = change_to_conventional
-
+    change_to_primitive = False
+    change_to_conventional = False
+   
     if verbosity >= 1:
-        print(('Lattice type has been identified as {} based on '
-               'cell parameters.').format(
-            lattice_system_dict['lattice_system']))
+        print(('Searching Bravais lattice system compatible {}-atom '
+               'original reprentation.').format(structure.num_sites))
+        # print('with cell parameters: ', 
+              # structure.lattice.lengths + structure.lattice.anles)
+    
+    orig_lattice_syst_dict = get_lattice_system_with_unique_param(
+                structure, return_as_dict=True, 
+                verbosity=verbosity, **kwargs)
+    orig_lattice_syst_dict['change_to_primitive'] = False
+    orig_lattice_syst_dict['change_to_conventional'] = False
+    
+    if verbosity >= 1:
+        print(('Searching Bravais lattice system compatible with {}-atom '
+               'primitive representation of composition {}.'
+               ).format(primitive_structure.num_sites, 
+                        get_compact_formula(primitive_structure)))
+        # print('with cell parameters: ', 
+            # primitive_structure.lattice.lengths + primitive_structure.lattice.angles)
+    
+    prim_lattice_syst_dict = get_lattice_system_with_unique_param(
+        primitive_structure, return_as_dict=True, 
+        verbosity=verbosity, **kwargs)
+    prim_lattice_syst_dict['change_to_primitive'] = True
+    prim_lattice_syst_dict['change_to_conventional'] = False
+            
+    if verbosity >= 1:
+        print(('Searching Bravais lattice system compatible with {}-atom '
+               'conventional representation of composition {}.'
+               ).format(conventional_structure.num_sites, 
+                        get_compact_formula(conventional_structure)))
+        # print('with cell parameters: ', 
+              # conventional_structure.lattice.lengths + conventional_structure.lattice.angles)
+        
+    conv_lattice_syst_dict = get_lattice_system_with_unique_param(
+            conventional_structure, return_as_dict=True, 
+            verbosity=verbosity, **kwargs)
+    conv_lattice_syst_dict['change_to_primitive'] = False
+    conv_lattice_syst_dict['change_to_conventional'] = True
+    
+    
+    sym_based_lattice_rank = LATTICE_SYSTEMS_HIERARCHY.index(
+        lattice_system)
+    
+    # Initialize lowest index
+    lattice_system_dict = None
+    lowest_index = sym_based_lattice_rank
+    current_lattice_origin = 'symmetry'
+    
+    # TODO: insert on option to prevent using the primitive representation
+    representations = ['original', 'conventional', 'primitive']
+    structure_representation_mapping = {
+        'original': structure, 
+        'conventional': conventional_structure, 
+        'primitive': primitive_structure
+    }
+    
+    for _lattice_syst_dict, representation in zip(
+        [orig_lattice_syst_dict, conv_lattice_syst_dict, prim_lattice_syst_dict],
+        representations):
+        
+        index = LATTICE_SYSTEMS_HIERARCHY.index(
+            _lattice_syst_dict['lattice_system'])
+        if index <= lowest_index:
+            lattice_system_dict = _lattice_syst_dict.copy()
+            current_lattice_origin = representation + ' cell paramaters'
+            lowest_index = index
+            if ('unique_parameter' in lattice_system_dict.keys() 
+                    and lattice_system_dict['unique_parameter']):
+                unique_param_str = ' ({}-unique)'.format(
+                    lattice_system_dict['unique_parameter'])
+            else:
+                unique_param_str = ''
+            if verbosity >= 2:
+                print('Lattice system updated to {}{} from {}'.format(
+                    lattice_system_dict['lattice_system'], 
+                    unique_param_str, current_lattice_origin))    
+
+    if verbosity >= 1:        
+        print(('{}-atom structure {} has cell paramaters compatible with '
+               'a {}{} Bravais lattice system based on its {}-atom {} representation.'
+               ).format(structure.num_sites, get_compact_formula(structure), 
+                        lattice_system_dict['lattice_system'], unique_param_str, 
+                        structure_representation_mapping[representation].num_sites, 
+                        representation))
 
     if verbosity >= 2:
         print('lattice_system_dict = ', lattice_system_dict)
@@ -981,20 +999,19 @@ def get_lattice_system_from_sym_or_cell(structure, return_as_dict=True,
         return lattice_system_dict
     else:
         return lattice_system_dict['lattice_system']
+    
 
-
-def permutate_structure(structure, perm_matrix, in_place=False):
+def permutate_structure_axes(structure, perm_matrix):
     """
     Permutate the cell parameters and atomic coordinates of a pymatgen Structure
-    based on a given permutation matrix. Optionally modifies the structure in place.
+    based on a given permutation matrix.
 
     Args:
         structure (Structure): pymatgen Structure object to permutate.
         perm_matrix (np.ndarray): 3x3 permutation matrix to apply.
-        in_place (bool): If True, modify the structure in place. Otherwise, return a new structure.
 
     Returns:
-        Structure: The permutated pymatgen Structure object (modified in place if in_place=True).
+        Structure: The permutated pymatgen Structure object.
     """
     # Ensure the permutation matrix is a 3x3 numpy array
     perm_matrix = np.array(perm_matrix)
@@ -1003,68 +1020,85 @@ def permutate_structure(structure, perm_matrix, in_place=False):
 
     # Get the current lattice (cell) matrix of the structure
     lattice = structure.lattice.matrix
-
+    
     # Apply the permutation matrix to the lattice
     new_lattice = np.dot(perm_matrix, lattice)
 
     # Now permutate the atomic positions by applying the same permutation
     new_positions = np.dot(perm_matrix, structure.frac_coords.T).T
 
-    if in_place:
-        # Modify the original structure in place
-        structure.lattice = new_lattice
-        structure.frac_coords = new_positions
-        return None  # Nothing is returned when modifying in place
+    # Return a new structure with the updated lattice and atomic positions
+    new_structure = Structure(new_lattice, structure.species, new_positions,
+                              coords_are_cartesian=False)
+    return new_structure
+
+
+def get_structure_with_compatible_lattice_system(structure_or_file, 
+                                                 lattice_system_dict=None, 
+                                                 verbosity=1, **kwargs):
+    """
+    Get a structure representation with cell axes compatible with the 
+    Bravais lattice system identified from cell paramaters. 
+    
+    Args:
+        structure_or_file: str, pymatgen Structure or ASE Atoms
+            Structure or coordinate file to work with.
+            
+        lattice_system_dict: dict or None (default is None),
+            Provide lattice_system_dict in cas it was already 
+            calculated before with get_lattice_system_from_sym_or_cell.
+        
+        verbosity: int (default is 1), 
+            Verbosity level
+        **kwargs:
+            Keword arguments to pass to numpy isclose and allclose
+            functions, including atol and rtol absolute and 
+            relative tolerance values.
+            
+    Returns:
+        new_structure: pymatgen Structure
+    """
+    structure = get_pymatgen_structure(structure_or_file)
+    
+    if not lattice_system_dict:
+        lattice_system_dict = get_lattice_system_from_sym_or_cell(
+        structure, return_as_dict=True, verbosity=verbosity, **kwargs)
+
+    sga = SpacegroupAnalyzer(structure)
+    
+    if verbosity >= 1:
+        print(('{}-atom {} structure representation will be modified '
+               'if necessary to get cell parameters compatible with the '
+               '{} Bravais lattice system identified based on cell parameters{}.'
+               ).format(structure.num_sites, get_compact_formula(structure), 
+                        lattice_system_dict['lattice_system'], 
+                        '' if sga.get_lattice_type() == lattice_system_dict['lattice_system']
+                        else ' (vs {} from symmetry)'.format(sga.get_lattice_type())))
+    
+    if lattice_system_dict['change_to_primitive']:
+        new_struct = sga.get_primitive_standard_structure()
+        print(('Converting initial {}-atom structure to its {}-atom '
+               'primitive representation.').format(structure.num_sites, 
+                new_struct.num_sites))
+    elif lattice_system_dict['change_to_conventional']:
+        new_struct = sga.get_conventional_standard_structure()
+        print(('Converting initial {}-atom structure to its {}-atom '
+               'conventional representation.').format(structure.num_sites, 
+                new_struct.num_sites))
     else:
-        # Return a new structure with the updated lattice and atomic positions
-        new_structure = Structure(new_lattice, structure.species, new_positions,
-                                  coords_are_cartesian=False)
-        return new_structure
+        new_struct = pmg_s.copy()
 
+    if not is_unitary_matrix(lattice_system_dict['swap_axes_matrix']):
+        if verbosity >= 2:
+            print('Structure axes will be permuted according to swap_axes_matrix:\n', 
+                  lattice_system_dict['swap_axes_matrix'])
+            
+        new_struct = permutate_structure_axes(new_struct,
+            lattice_system_dict['swap_axes_matrix'])
+        
+        if verbosity >= 1:
+            print('Cell axes were swapped to : ',
+                new_struct.lattice.lengths + new_struct.lattice.angles)
+    
+    return new_struct
 
-"""
-def determine_ibrav(structure: StructureData):
-    Determines the ibrav value based on the structure's cell parameters (lengths and angles).
-    First, ensures that the structure uses the conventional representation.
-
-    :param structure: AiiDA StructureData object
-    :return: The corresponding ibrav integer value for pw.x
-
-    # Convert AiiDA StructureData to pymatgen Structure object
-    pymatgen_structure = Structure.from_sites(structure.sites)
-
-    # Standardize the cell to its conventional representation
-    pymatgen_structure = pymatgen_structure.get_conventional_standard_structure()
-
-    # Get the lengths (a, b, c) and angles (alpha, beta, gamma)
-    lengths = pymatgen_structure.lattice.abc
-    angles = pymatgen_structure.lattice.angles
-
-    a, b, c = lengths
-    alpha, beta, gamma = angles
-
-    # Mapping cell parameters to ibrav
-    if alpha == 90.0 and beta == 90.0 and gamma == 90.0:  # Orthogonal cell
-        if a == b == c:  # Simple cubic (a=b=c)
-            return 1  # ibrav 1: Simple cubic
-        elif a == b:  # Tetragonal (a=b≠c)
-            return 4  # ibrav 4: Tetragonal
-        else:  # Orthorhombic (a≠b≠c)
-            return 8  # ibrav 8: Orthorhombic
-    elif alpha == beta == 90.0 and gamma == 120.0:  # Hexagonal
-        return 6  # ibrav 6: Hexagonal
-    elif alpha == beta and gamma != 120.0:  # Rhombohedral (or trigonal)
-        return 7  # ibrav 7: Rhombohedral
-    elif alpha != 90.0 and beta != 90.0 and gamma != 90.0:  # Triclinic
-        return 12  # ibrav 12: Triclinic
-    elif alpha == beta == 90.0 and gamma != 90.0:  # Monoclinic (general)
-        return 13  # ibrav 13: Monoclinic with non-90° angles, unique axis along b or c
-    elif alpha == 90.0 and beta != 90.0 and gamma == 90.0:  # Monoclinic (with unique axis along a)
-        return -13  # ibrav -13: Monoclinic with unique axis along a
-    else:
-        return 0  # No symmetry or unusual case: ibrav 0
-
-# Example usage:
-# structure = StructureData(cell=[[3, 0, 0], [0, 3, 0], [0, 0, 3]])
-# print(determine_ibrav(structure))
-"""

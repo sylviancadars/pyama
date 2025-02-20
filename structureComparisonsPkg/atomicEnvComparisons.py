@@ -33,17 +33,24 @@ class AtomEnvComparisonsData(BaseDataClass):
     TO BE COMPLETED
     """
     def __init__(self, average_kernel_metric='polynomial', average_kernel_degree=3,
-                 soap_r_cut=5.0, soap_n_max=5, soap_l_max=5, soap_sigma=1.0,
-                 soap_weighting={'function': 'poly', 'c': 1, 'm': 1, 'r0': 5.0},
-                 soap_periodic=True, soap_rbf='polynomial',
-                 soap_compression={'mode': 'crossover'},
-                 soap_sparse=False, species=None, verbosity=1):
+                 soap_parameters=None, species=None, verbosity=1):
+
+        """
+        def __init__(self, average_kernel_metric='polynomial', average_kernel_degree=3,
+                     soap_r_cut=5.0, soap_n_max=5, soap_l_max=5, soap_sigma=1.0,
+                     soap_weighting={'function': 'poly', 'c': 1, 'm': 1, 'r0': 5.0},
+                     soap_periodic=True, soap_rbf='polynomial',
+                     soap_compression={'mode': 'crossover'},
+                     soap_sparse=False, species=None, verbosity=1):
+        """
         super().__init__(verbosity=verbosity,
                          print_to_console=True,
                          print_to_file=False)
 
         self.average_kernel_metric = average_kernel_metric
         self.average_kernel_degree = average_kernel_degree
+
+        """
         self.soap_r_cut = soap_r_cut
         self.soap_n_max = soap_n_max
         self.soap_l_max = soap_l_max
@@ -53,14 +60,35 @@ class AtomEnvComparisonsData(BaseDataClass):
         self.soap_rbf = soap_rbf
         self.soap_compression = soap_compression
         self.soap_sparse = soap_sparse
+        """
+        if not soap_parameters:
+            self.soap_parameters = {
+                'r_cut': None,
+                'n_max': 4,
+                'l_max': 4,
+                'sigma': 0.5,  # WARNING: small values such as 0.1 give unreliable results (default is 1.0)
+                'rbf': 'polynomial',
+                'weighting': {
+                    "function": "poly",
+                    "r0": 8.0,
+                    "c": 1,
+                    "m": 1
+                },
+                'periodic': True,
+                'compression': {'mode': 'crossover'},
+                'sparse': False
+            }
+        else:
+            self.soap_parameters = soap_parameters
+
         self.verbosity = verbosity
 
-        if species is not None:
-            self.species = self.set_species(species)
+        if species:
+            self.set_species(species)
         else:
             self.species = None
         # TODO: add soap.weighting
-        self.soap_descriptor = None
+        self.set_soap_descriptor()
 
     def set_species(self, atoms_or_atoms_list):
         """
@@ -85,9 +113,9 @@ class AtomEnvComparisonsData(BaseDataClass):
                 atoms = get_ase_atoms(_) if not isinstance(_, Atoms) else _
                 _species.update(set(atoms.get_chemical_symbols()))
             self.species = list(_species)
-        
+
         self.print('species property set to {}'.format(self.species), verb_th=2)
-        
+
 
     def set_soap_descriptor(self, species=None):
         """
@@ -106,12 +134,7 @@ class AtomEnvComparisonsData(BaseDataClass):
         if self.species is None:
             raise ValueError('species property should be provided to create the SOAP descriptor.')
 
-        self.soap_descriptor = SOAP(species=self.species, r_cut=self.soap_r_cut,
-                                    n_max=self.soap_n_max, l_max=self.soap_l_max,
-                                    sigma=self.soap_sigma, weighting=self.soap_weighting,
-                                    periodic=self.soap_periodic, rbf=self.soap_rbf,
-                                    compression=self.soap_compression,
-                                    sparse=self.soap_sparse)
+        self.soap_descriptor = SOAP(species=self.species, **self.soap_parameters)
 
     def get_similary_maps_by_type(self, system_1, system_2, species=None,
                                   periodic_1=None, periodic_2=None,
@@ -169,9 +192,7 @@ class AtomEnvComparisonsData(BaseDataClass):
                     _species.update(atoms.get_chemical_symbols())
                     self.print('_species updated to {}'.format(_species), verb_th=3)
                 self.set_species(list(_species))
-        
-        print(self.species)
-        
+
         if periodic_1 is None:
             periodic_1 = all(atoms_1.pbc)
         if periodic_2 is None:
@@ -179,15 +200,13 @@ class AtomEnvComparisonsData(BaseDataClass):
 
         features_list = []
         for periodic, atoms in zip([periodic_1, periodic_2], [atoms_1, atoms_2]):
-            if periodic == self.soap_periodic:
+            if ('periodic' in self.soap_parameters.keys() 
+                and self.soap_parameters['periodic'] == self.soap_periodic):
                 if self.soap_descriptor is None:
                     self.set_soap_descriptor()
                 desc = self.soap_descriptor
             else:
-                desc = SOAP(species=self.species, r_cut=self.soap_r_cut,
-                    n_max=self.soap_n_max, l_max=self.soap_l_max, sigma=self.soap_sigma,
-                    periodic=periodic, rbf=self.soap_rbf, weighting=self.soap_weighting,
-                    compression=self.soap_compression, sparse=self.soap_sparse)
+                desc = SOAP(species=self.species, **self.soap_parameters)
 
             features_list.append(desc.create(atoms))
 
@@ -444,10 +463,13 @@ class AtomEnvComparisonsData(BaseDataClass):
         for i, site in enumerate(sites):
             for j, ref_site in enumerate(ref_sites):
                 if site['type'] == ref_site['type']:
+                    """
+                    DEBUGGING
                     print('site: ', site)
                     print('ref_site: ', ref_site)
                     print(similarities_by_type[
                         ref_site['syst_name']][site['type']]['map'].shape)
+                    """
                     # TODO: find index of ref_site['index'] and site['index'] in map (only )
                     _ = similarities_by_type[
                         ref_site['syst_name']][site['type']]
@@ -488,9 +510,10 @@ class AtomEnvComparisonsData(BaseDataClass):
         """
         Get similarities between corresponding sites in structures with identical site indexing
 
-        TO BE SET USING get_similary_maps_by_type WITH matching_sites=True
-        similarities[atom_type] could be simplified (one indexing by type and a vector of
-        similarity value rather than a map.
+        Args:
+
+        Returns:
+
         """
         full_sim =  self.get_similary_maps_by_type(system_1, system_2, species=species,
             periodic_1=None, periodic_2=None, matching_sites=True)
