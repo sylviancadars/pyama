@@ -14,6 +14,8 @@ from subprocess import call
 import sys
 import numpy as np
 
+from scipy.spatial.transform import Rotation
+
 
 # TOBETESTED... order between hexagonal and thombohedral is not obvious
 # From highest to lowest constraints.
@@ -684,10 +686,6 @@ def get_lattice_system_with_unique_param(structure_or_lattice,
 
     IMPORTANT: Symmetry is completely ignored here.
 
-    A cell is considered monoclinic if:
-    - Two angles are close to 90°, and the third different from 90°.
-    - Two cell lengths are equal, and the third is different.
-
     Parameters:
     -----------
     cell_lengths : list or tuple of 3 float
@@ -1102,3 +1100,28 @@ def get_structure_with_compatible_lattice_system(structure_or_file,
     
     return new_struct
 
+
+def get_rotation_axis_and_angle(v_1, v_2, angle_in_radians=False):
+    """
+    Get the rotation axis and angles between sets of angles expressed in different frames
+    
+    Args:
+        v_1: array_like, shape (3,) or (N, 3)
+            Vector components observed in initial frame 1. 
+            Each row of v_1 denotes a vector.
+        v_2: array_like, shape (3,) or (N, 3)
+            Vector components observed in initial frame 2. 
+            Each row of v_2 denotes a vector.
+        angle_in_radians: bool (default is False)
+            Whether rotation angle should be returned in radians rather than degrees.
+    """
+    rotation = Rotation.align_vectors(v_1, v_2)[0]
+    mrp = rotation.as_mrp()
+    axis_norm = np.linalg.norm(mrp)
+    axis = mrp / axis_norm
+    angle = 4 * np.arctan(axis_norm)
+    if not angle_in_radians:
+        angle = (180 / np.pi ) * angle
+
+    return axis, angle
+    
