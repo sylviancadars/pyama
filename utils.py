@@ -715,6 +715,7 @@ def get_lattice_system_with_unique_param(structure_or_lattice,
     --------
     TO BE COMPLETED
     """
+    
     cell_lengths_and_angles = get_cell_lengths_and_angles(structure_or_lattice)
     cell_lengths = cell_lengths_and_angles[:3]
     cell_angles = cell_lengths_and_angles[3:]
@@ -1019,11 +1020,11 @@ def permutate_structure_axes(structure, perm_matrix):
     # Get the current lattice (cell) matrix of the structure
     lattice = structure.lattice.matrix
     
-    # Apply the permutation matrix to the lattice
-    new_lattice = np.dot(perm_matrix, lattice)
+    # Apply the permutation matrix to the lattice (column vectors)
+    new_lattice = np.dot(lattice.T, perm_matrix).T
 
     # Now permutate the atomic positions by applying the same permutation
-    new_positions = np.dot(perm_matrix, structure.frac_coords.T).T
+    new_positions = np.dot(structure.frac_coords, perm_matrix)
 
     # Return a new structure with the updated lattice and atomic positions
     new_structure = Structure(new_lattice, structure.species, new_positions,
