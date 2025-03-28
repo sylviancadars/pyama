@@ -85,10 +85,12 @@ class AtomEnvComparisonsData(BaseDataClass):
 
         if species:
             self.set_species(species)
+            self.set_soap_descriptor(species=species)
+
         else:
             self.species = None
+            self.soap_descriptor = None
         # TODO: add soap.weighting
-        self.set_soap_descriptor()
 
     def set_species(self, atoms_or_atoms_list):
         """
@@ -200,8 +202,9 @@ class AtomEnvComparisonsData(BaseDataClass):
 
         features_list = []
         for periodic, atoms in zip([periodic_1, periodic_2], [atoms_1, atoms_2]):
-            if ('periodic' in self.soap_parameters.keys() 
-                and self.soap_parameters['periodic'] == self.soap_periodic):
+            # Allow possibility to have non-periodic atoms_1 or atoms_2
+            if ('periodic' in self.soap_parameters.keys()
+                and self.soap_parameters['periodic'] == periodic):
                 if self.soap_descriptor is None:
                     self.set_soap_descriptor()
                 desc = self.soap_descriptor
@@ -525,6 +528,198 @@ class AtomEnvComparisonsData(BaseDataClass):
             }
         return similarities
 
+    def get_multisystem_similary_maps_by_type(self, systems, species=None,
+                                              periodic=True):
+        """
+        Get similarity maps by type and associated site mappings between mutiple structures
+
+        TODO: add the possibility to merge similar sites (beyond a specified similarity
+              thesrhold). The mapping should then include a list of equivalent sites.
 
 
+        'system_indexes': -np.ones(nb_of_sites_by_type[atom_type]),
+                'site_indexes_in_syst': -np.ones(nb_of_sites_by_type[atom_type]),
+                'map':
+        Args:
+
+        Returns:
+            multisyst_sim_by_type: dict
+                A dictionary constructed as follows:
+                    multisyst_sim_by_type = {
+                        atom_type_1: {
+                            'system_indexes': array of shape (1, n)
+                            'site_indexes_in_syst': array of shape (1, n)
+                            'map': similarity map of shape (n, n),
+                        },
+                        atom_type_2: {
+                            ...
+                    }
+                where n and m are the number of atoms of atom_type_1 in
+                all considered systems.
+        """
+        if not all([isinstance(s, Atoms) for s in systems]):
+            systems = [get_ase_atoms(s) for s in systems]
+
+        print('systems = ', systems)
+
+        if not species:
+            self.set_species(systems)
+        else:
+            self.set_species(species)
+
+        self.print(f'species = {self.species}', verb_th=2)
+
+        self.set_soap_descriptor()
+
+        # TODO ? Merge equivalent sites in each structure
+
+        # Calculate number of sites and initiazlize global similarities:
+        nb_of_sites_by_type = {atom_type: 0 for atom_type in self.species}
+        for syst_1_index, atoms_1 in enumerate(systems):
+            for atom_type in self.species:
+                nb_of_sites_by_type[atom_type] += atoms_1.symbols.count(atom_type)
+
+        self.print(f'The total number of sites by atom types in all {len(systems)} '
+                   f'considered systems is :\n{nb_of_sites_by_type}')
+
+        multisyst_sim_by_type = {
+            atom_type: {
+                'system_indexes': -np.ones(nb_of_sites_by_type[atom_type], 
+                                           dtype=int),
+                'site_indexes_in_syst': -np.ones(nb_of_sites_by_type[atom_type], 
+                                                 dtype=int),
+                'map': -np.ones((nb_of_sites_by_type[atom_type], 
+                                 nb_of_sites_by_type[atom_type]))
+            } for atom_type in self.species
+        }
+
+        # Initialize first site_index_1_by_type and first site_index_1_by_type
+        site_index_1_by_type = {atom_type: 0 for atom_type in self.species}
+        site_index_2_by_type = {atom_type: 0 for atom_type in self.species}
+        for syst_1_index, atoms_1 in enumerate(systems):
+            # Fill multisyst_sim_by_type 'system_indexes' and 'site_indexes_in_syst'
+            for atom_type in self.species:
+                i_0 = site_index_1_by_type[atom_type]
+                indexes_in_syst_1 = [i for i, atom in enumerate(atoms_1)
+                                     if atom.symbol == atom_type]
+
+                multisyst_sim_by_type[atom_type]['system_indexes'][
+                    np.arange(i_0,i_0+len(indexes_in_syst_1))] = syst_1_index
+
+                multisyst_sim_by_type[atom_type]['site_indexes_in_syst'][
+                    np.arange(i_0,i_0+len(indexes_in_syst_1))] = indexes_in_syst_1
+
+            for syst_2_index, atoms_2 in enumerate(systems):
+                if syst_2_index > syst_1_index:
+                    break
+                _verbosity = self.verbosity
+                self.verbosity = 1
+                similarities = self.get_similary_maps_by_type(atoms_1, atoms_2,
+                    species=self.species, periodic_1=periodic, periodic_2=periodic)
+                self.verbosity = _verbosity
+
+                for atom_type in self.species:
+                    i_0 = site_index_1_by_type[atom_type]
+                    j_0 = site_index_2_by_type[atom_type]
+                    indexes_in_syst_1 = [i for i, atom in enumerate(atoms_1)
+                                         if atom.symbol == atom_type]
+                    indexes_in_syst_2 = [i for i, atom in enumerate(atoms_2)
+                                         if atom.symbol == atom_type]
+
+                    row_indexes = np.arange(i_0,i_0+len(indexes_in_syst_1))
+                    col_indexes = np.arange(j_0,j_0+len(indexes_in_syst_2))
+                    block_indexes = np.ix_(row_indexes, col_indexes)
+                    self.print(f'row_indexes of shape {row_indexes.shape}: {row_indexes}',
+                               verb_th=3)
+                    self.print(f'col_indexes of shape {col_indexes.shape}: {col_indexes}',
+                               verb_th=3)
+                    self.print(f'block_indexes of length {len(block_indexes)}: {block_indexes}',
+                               verb_th=3)
+
+                    self.print(('similarity[{}][\'map\'] of shape {} will be used '
+                                'to update multisyst_sim_by_type[{}][\'map\'] block '
+                                ' of size {} starting with indexes {}').format(atom_type,
+                                    similarities[atom_type]['map'].shape, atom_type,
+                                    len(block_indexes), (i_0, j_0)),
+                               verb_th=2)
+
+                    # Fill multisyst_sim_by_type 'map'
+                    multisyst_sim_by_type[atom_type]['map'][block_indexes
+                        ] = similarities[atom_type]['map']
+
+                    if syst_2_index != syst_1_index:
+                         # Fill with symetric block with transpose
+                         multisyst_sim_by_type[atom_type]['map'][
+                        np.ix_(np.arange(j_0,j_0+len(indexes_in_syst_2)),
+                               np.arange(i_0,i_0+len(indexes_in_syst_1)))
+                        ] = similarities[atom_type]['map'].T
+
+                    self.print('multisyst_sim_by_type[{}][\'map\'] =\n{}'.format(
+                        atom_type, multisyst_sim_by_type[atom_type]['map']), verb_th=3)
+
+                    site_index_2_by_type[atom_type] += len(indexes_in_syst_2)
+
+            # Increment site_index_1_by_type and re-initialize site_index_2_by_type
+            for atom_type in self.species:
+                site_index_1_by_type[atom_type] += atoms_1.symbols.count(atom_type)
+                site_index_2_by_type[atom_type] = 0
+
+        return multisyst_sim_by_type
+
+    def plot_mutisyst_similarity_maps(self, multisyst_sim_by_type, title=None,
+            fig_size_inches=(9.6, 4.8), cmap=None, subplots=None, show_plot=True):
+        """
+        Plot muti-system similarity maps by type as obtained with get_multisystem_similary_maps_by_type
+
+        Args:
+            multisyst_sim_by_type: dict
+                Dictionary as obtained with get_multisystem_similary_maps_by_type.
+                (see description therein).
+            title: str or one (default is None).
+                If None a title will be set automatically.
+            fig_size_inches: tuple, list or None
+                Figure size in inches (default is (9.6, 4.8))
+            cmap: cmap, str or None (default is None)
+                Set to 'default' to use the default matplotlib map.
+            subplots: tuple, list or None (default is None)
+                if None (1, nb_of_species) subplots will be used
+            show_plot: bool (default is True)
+                Whether plit should be shown or simply used to create
+                fig and ax variables.
+        """
+        # TODO: adapt number of subplots to number of species
+        if cmap == 'default':
+            cmap = None
+        elif cmap is None:
+            colors = [(1, 0, 0), (1, 0.9, 0), (0, 0.75, 0)]  # Red, Gold, Green
+            cmap = LinearSegmentedColormap.from_list('RedGoldGreen', colors)
+
+        if subplots is None:
+            fig, ax = plt.subplots(1, len(multisyst_sim_by_type.keys()))
+        else:
+            fig, ax = plt.subplots(subplots[0], subplots[1])
+
+        # flatten ax to facilitate loop.
+        ax_flat = ax.ravel()
+        for specie_index, specie in enumerate(multisyst_sim_by_type.keys()):
+            self.print('multisyst_sim_by_type[{}][map] has shape {}'.format(
+                specie, multisyst_sim_by_type[specie]['map'].shape), verb_th=2)
+            pcm = ax_flat[specie_index].imshow(multisyst_sim_by_type[specie]['map'],
+                                               cmap=cmap)
+            ax_flat[specie_index].set(title='simaliries between {} atoms'.format(specie),
+                                 xlabel='system-site indexes',
+                                 ylabel='system-site indexes')
+            tick_labels = [f'{i}-{j}' for i, j in
+                     zip(multisyst_sim_by_type[specie]['system_indexes'],
+                         multisyst_sim_by_type[specie]['site_indexes_in_syst'])]
+            n_sites = len(multisyst_sim_by_type[specie]['system_indexes'])
+            ax_flat[specie_index].set_xticks(np.arange(n_sites), labels=tick_labels)
+            ax_flat[specie_index].set_yticks(np.arange(n_sites), labels=tick_labels)
+
+            cb = fig.colorbar(pcm, ax=ax_flat[specie_index])
+
+        fig.set_size_inches(fig_size_inches[0], fig_size_inches[1])
+        if show_plot:
+            plt.show()
+        return fig, ax
 
