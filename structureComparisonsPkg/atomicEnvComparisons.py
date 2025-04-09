@@ -20,6 +20,14 @@ from pyama.utils import BaseDataClass
 
 from ase.atoms import Atoms
 
+from itertools import product
+from copy import deepcopy
+from time import perf_counter
+from sys import getsizeof
+import pandas as pd
+import os
+import json
+
 plt.rcParams['svg.fonttype'] = 'none'
 
 # Create a custom color map (here Red-Gold-Green)
@@ -32,17 +40,9 @@ class AtomEnvComparisonsData(BaseDataClass):
 
     TO BE COMPLETED
     """
-    def __init__(self, average_kernel_metric='polynomial', average_kernel_degree=3,
+    def __init__(self, average_kernel_metric='polynomial', average_kernel_degree=4,
                  soap_parameters=None, species=None, verbosity=1):
 
-        """
-        def __init__(self, average_kernel_metric='polynomial', average_kernel_degree=3,
-                     soap_r_cut=5.0, soap_n_max=5, soap_l_max=5, soap_sigma=1.0,
-                     soap_weighting={'function': 'poly', 'c': 1, 'm': 1, 'r0': 5.0},
-                     soap_periodic=True, soap_rbf='polynomial',
-                     soap_compression={'mode': 'crossover'},
-                     soap_sparse=False, species=None, verbosity=1):
-        """
         super().__init__(verbosity=verbosity,
                          print_to_console=True,
                          print_to_file=False)
@@ -50,17 +50,6 @@ class AtomEnvComparisonsData(BaseDataClass):
         self.average_kernel_metric = average_kernel_metric
         self.average_kernel_degree = average_kernel_degree
 
-        """
-        self.soap_r_cut = soap_r_cut
-        self.soap_n_max = soap_n_max
-        self.soap_l_max = soap_l_max
-        self.soap_sigma = soap_sigma
-        self.soap_weighting = soap_weighting
-        self.soap_periodic = soap_periodic
-        self.soap_rbf = soap_rbf
-        self.soap_compression = soap_compression
-        self.soap_sparse = soap_sparse
-        """
         if not soap_parameters:
             self.soap_parameters = {
                 'r_cut': None,
@@ -584,11 +573,11 @@ class AtomEnvComparisonsData(BaseDataClass):
 
         multisyst_sim_by_type = {
             atom_type: {
-                'system_indexes': -np.ones(nb_of_sites_by_type[atom_type], 
+                'system_indexes': -np.ones(nb_of_sites_by_type[atom_type],
                                            dtype=int),
-                'site_indexes_in_syst': -np.ones(nb_of_sites_by_type[atom_type], 
+                'site_indexes_in_syst': -np.ones(nb_of_sites_by_type[atom_type],
                                                  dtype=int),
-                'map': -np.ones((nb_of_sites_by_type[atom_type], 
+                'map': -np.ones((nb_of_sites_by_type[atom_type],
                                  nb_of_sites_by_type[atom_type]))
             } for atom_type in self.species
         }
@@ -723,3 +712,295 @@ class AtomEnvComparisonsData(BaseDataClass):
             plt.show()
         return fig, ax
 
+
+def expand_dict(params):
+    # Find all keys that have lists as values
+    list_keys = [key for key, value in params.items()
+                 if isinstance(value, (list, tuple))]
+
+    # Find all keys that have single values
+    single_keys = [key for key, value in params.items()
+                   if not isinstance(value, (list, tuple))]
+
+    # Generate all combinations of list values
+    list_combinations = product(*(params[key] for key in list_keys))
+
+    # Create a list to store the expanded dictionaries
+    expanded_dicts = []
+
+    # Iterate over all combinations
+    for combination in list_combinations:
+        # Create a new dictionary for this combination
+        new_dict = params.copy()
+
+        # Update the new dictionary with the current combination
+        for key, value in zip(list_keys, combination):
+            new_dict[key] = value
+
+        # Add the new dictionary to the list
+        expanded_dicts.append(new_dict)
+
+    return expanded_dicts
+
+
+def test_soap_parameters(systems, change_parameters, ref_soap_parameters=None,
+                         data_path='atomicEnvComparisons_data', 
+                         fig_file_basename='test_soap_param_fig',
+                         csv_file_name='test_soap_parameters.csv', 
+                         show_similarity_plots=True, verbosity=1):
+    """
+    Test the influence of SOAP parameters on a list of structures
+
+    Accuracy is evaluated by comparison with a set of
+    highly-accurate ref_soap_parameters.
+
+    The studied parameters are given in the change_parameters
+    dictionary, which may contain for each parameters a single
+    differing from the reference parameters, or a list/tuple
+    of values, in which case similarities betweenall sites in
+    all structures will be measured for all combinations of
+    parameters.
+
+    Parameters located in nested dicts of the SOAP parameters
+    will be considered as well (with a depth of only one and
+    assuming that parameters in different nested dictionaries
+    do not have similar names).
+    
+    Args:
+        systems: list or tuple of ASE Atoms, pymaten Structures, coord. files
+
+        change_parameters: dict
+            Dictionary of parameters and values that change from
+            the reference set of parameters (ref_soap_parameters).
+            Single values or list/tuples may be used for every
+            considered paremeter.
+        ref_soap_parameters: dict (default is None)
+            Set of parameters that should be used as the
+            high-accuracy reference t evaluate performance
+            and accuracy.
+        verbosity: int (default is 1)
+            Verbosity level
+
+    Returns:
+        TOBECOMPLETED
+    """
+    atoms_list = [get_ase_atoms(system) for system in systems]
+
+    if not ref_soap_parameters:
+        aecd = AtomEnvComparisonsData()
+        ref_soap_parameters = aecd.soap_paramaters
+
+    change_param_combinations = expand_dict(change_parameters)
+
+    if verbosity >= 2:
+        print('change_param_combinations:\n', change_param_combinations)
+        print()
+
+    species = set()
+    for atoms in atoms_list:
+        species = species.union(atoms.symbols.species())
+    species = list(species)
+
+    if verbosity >= 1:
+        print(f'Species = {species}')
+
+    soap_param_list = []
+    similarities_data = {atom_type: {} for atom_type in species}
+    
+    fixed_param_description = ', '.join(
+        [f'{k}: {v}' for k, v in change_parameters.items()
+         if not isinstance(v, (list, tuple))])
+             
+    change_param_descriptions = []
+    is_data_dict_initialized = False
+    data_index_by_type = {atom_type: 0 for atom_type in species}
+    for param_set_index, change_param in enumerate(change_param_combinations):
+
+        change_param_descriptions.append(
+            ', '.join([f'{k}: {v}' for k, v in change_param.items()
+                       if isinstance(change_parameters[k], (list, tuple))]))
+        
+        if verbosity >= 3:
+            print('change_param for param_set_index {} with description {}:\n{}'.format(
+                param_set_index, change_param_descriptions[-1], change_param))
+                     
+        soap_param = deepcopy(ref_soap_parameters)
+        for k, v in change_param.items():
+            if k in soap_param.keys():
+                soap_param[k] = v
+            else:
+                for ref_param_key, ref_param_val in soap_param.items():
+                    if isinstance(ref_param_val, dict) and k in ref_param_val.keys():
+                        soap_param[ref_param_key][k] = v
+
+        if verbosity >= 3:
+            print('soap_param:\n', soap_param)
+
+        soap_param_list.append(soap_param)
+        tic = perf_counter()
+        aecd = AtomEnvComparisonsData(soap_parameters=soap_param, species=species,
+                                      verbosity=1)
+        
+        if verbosity >= 2:
+            print('Similarities will be calculated with SOAP parameters:\n', 
+                  aecd.soap_parameters)
+        
+        multisyst_sim_by_type = aecd.get_multisystem_similary_maps_by_type(
+            atoms_list, species=species)
+        sim_calc_time = perf_counter() - tic
+        
+        n_features = aecd.soap_descriptor.get_number_of_features()
+
+        for atom_type in species:
+            mssbt = multisyst_sim_by_type[atom_type]
+            size = mssbt['map'].size
+            shape = mssbt['map'].shape
+            if len(soap_param_list) == 1:
+                similarities_data[atom_type] = {
+                    'system_indexes': mssbt['system_indexes'],
+                    'site_indexes_in_syst': mssbt['site_indexes_in_syst'],
+                    'all_sim': mssbt['map'].flatten().reshape((1, size)),
+                }
+            else:
+                similarities_data[atom_type]['all_sim'] = np.concatenate(
+                    (similarities_data[atom_type]['all_sim'],
+                    mssbt['map'].flatten().reshape((1, size))))
+
+            if verbosity >= 3:
+                print(f'multisyst_sim_by_type[{atom_type}][\'map\'] has '
+                      f'shape {shape} and size {size}.')
+                print(f'similarities_data[{atom_type}][\'all_sim\'] now has '
+                      'shape {}'.format(similarities_data[atom_type]['all_sim'].shape))
+
+            if not is_data_dict_initialized:
+                data_dict = {k: [v] for k, v in change_param.items()}
+                data_dict['atom_type'] = [atom_type]
+                data_dict['sim_calc_time_s'] = [sim_calc_time]
+                data_dict['n_features'] = [n_features]
+                data_dict['index_by_type'] = [data_index_by_type[atom_type]]
+                is_data_dict_initialized = True
+            else:
+                [data_dict[k].append(v) for k, v in change_param.items()]
+                data_dict['atom_type'].append(atom_type)
+                data_dict['sim_calc_time_s'].append(sim_calc_time)
+                data_dict['n_features'].append(n_features)
+                data_dict['index_by_type'].append(data_index_by_type[atom_type])
+
+            # increment data_index_by_type
+            data_index_by_type[atom_type] += 1
+            
+            if verbosity >= 3:
+                print(f'Similarities have been treated for {atom_type} atoms '
+                      f'with param_set_index {param_set_index}, data_dict has '
+                      f'been updated to:\n{data_dict}\n')
+
+    if verbosity >= 2:
+        print(f'fixed_param_description: {fixed_param_description}')
+        print('change_param_descriptions:\n', change_param_descriptions)
+        print('soap_param_list:\n', soap_param_list)
+    
+    # Store similarities_data[atom_type]['all_sim'] in data_path
+    if not os.path.isdir(data_path):
+        os.makedirs(data_path)
+        
+    for atom_type in species:
+        file_name = os.path.abspath(os.path.join(
+            data_path, f'similarities_{atom_type}.npy'))
+        np.save(file_name, similarities_data[atom_type]['all_sim'])
+
+    # Calculate similarities with reference parameters:
+    aecd = AtomEnvComparisonsData(soap_parameters=ref_soap_parameters, species=species,
+                                  verbosity=1)
+    if verbosity >= 2:
+        print('Similarities will be calculated with the reference SOAP parameters:\n', 
+              aecd.soap_parameters)
+    ref_multisyst_sim_by_type = aecd.get_multisystem_similary_maps_by_type(
+            atoms_list, species=species)
+
+    # adapt subplots to nb of species   
+    num_plots = len(species)
+    # Determine the number of rows and columns
+    num_cols = int(np.ceil(np.sqrt(num_plots)))
+    num_rows = int(np.ceil(num_plots / num_cols))
+
+    # Create the subplots
+    fig, ax = plt.subplots(num_rows, num_cols, 
+                           figsize=(num_cols * 4, num_rows * 4))
+
+    
+    data_dict.update({param: [] for param in ['resid_err', 'RMSE_to_ref', 
+                                              'linreg_a', 'linreg_b', 
+                                              'RMSE_to_linreg']})
+    ax_flat = ax.ravel()
+    
+    ref_sim = {}
+    for type_index, atom_type in enumerate(species):
+        ref_sim[atom_type] = ref_multisyst_sim_by_type[atom_type]['map'].flatten()
+    
+    for i in range(len(soap_param_list)):
+        for type_index, atom_type in enumerate(species):
+            
+            """
+            if plot_relative_errors:
+                x = 1 - ref_sim
+                y = x - similarities_data[atom_type]['all_sim'][i]
+                y = np.divide(y, x, out=np.full_like(y, np.nan),
+                              where=~np.isclose(x, 0, atol=1e-5))
+            """
+            x = ref_sim[atom_type]
+            y = similarities_data[atom_type]['all_sim'][i]
+
+            series, results = np.polynomial.Polynomial.fit(x, y, 1, full=True)
+            # print(f'Polynomial fit series: {series}')
+            (b, a) = series.convert().coef
+            residual_errors = results[0][0]
+            rmse = np.sqrt(np.mean((x - y)**2))
+            rmse_to_linreg = np.sqrt(np.mean(((a * x + b) - y)**2))
+
+            data_dict['resid_err'].append(residual_errors)
+            data_dict['RMSE_to_ref'].append(rmse)
+            data_dict['RMSE_to_linreg'].append(rmse_to_linreg)
+            data_dict['linreg_a'].append(a)
+            data_dict['linreg_b'].append(b)
+
+            ax_flat[type_index].plot(x, y, label=change_param_descriptions[i],
+                    marker='o', markersize=3, ls='none')
+    
+            color = ax_flat[type_index].lines[-1].get_color()
+    
+            min_max_x = np.array((np.min(x),np.max(x))) 
+            ax_flat[type_index].plot(min_max_x, a* min_max_x + b, label='linreg',
+                    marker='none', ls='-', color=color)
+    
+        ax_flat[type_index].set(xlabel='Site similarities with ref SOAP parameters',
+            ylabel='Site similarities with selected param.',
+            title=f'{atom_type} atoms, ' + fixed_param_description)
+        ax_flat[type_index].legend()
+
+    # WARNING: svg can lead to quickly lead to huge structure files.
+    for ext in ['png']:
+        fig_file_name = os.path.abspath(os.path.join(data_path, f'{fig_file_basename}.{ext}'))
+        plt.savefig(fig_file_name)
+        print(f'Figure saved as {fig_file_name}.')
+
+    df = pd.DataFrame(data_dict)
+    if verbosity >= 2:
+        print('test_soap_parameters Dataframe:\n', df)
+    
+    csv_file_name = os.path.abspath(os.path.join(data_path, csv_file_name))
+    
+    df.to_csv(csv_file_name)
+    print(f'Data table saved as {csv_file_name}.')
+    
+    # Store metadata json file:
+    file_name = os.path.abspath(os.path.join(data_path, 'soap_parameters.json'))
+    with open(file_name, 'w') as f:
+        json.dump({
+                    "ref_soap_parameters": ref_soap_parameters,  
+                    "change_parameters": change_parameters,                    
+                  }, f, indent=4)
+    
+    if show_similarity_plots:
+        plt.show()
+
+    return df, csv_file_name, fig, ax
