@@ -8,11 +8,15 @@ from pymatgen.core.trajectory import Trajectory
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.units import Energy, Length, FloatWithUnit
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pymatgen.core.composition import Composition
+from pymatgen.core.periodic_table import Species, Element
 
 import os
 from subprocess import call
 import sys
 import numpy as np
+from itertools import product
+from warnings import warn
 
 from scipy.spatial.transform import Rotation
 
@@ -1138,4 +1142,263 @@ def has_transition_metal(struct_or_file):
     """
     structure = get_pymatgen_structure(struct_or_file)
     return any([elmt.is_transition_metal for elmt in structure.elements])
+
+
+def get_composition(compo_formula_or_struct):
+    """
+    get pymatgen COmposition instance from a Composition, formula or Structure
+
+    Args:
+        compo_formula_or_struct: Composition, str or Structure
+            composition, formula or Structure
+
+    Returns:
+        composition: pymatgen Composition instance
+    """
+    if isinstance(compo_formula_or_struct, str):
+        composition = Composition(compo_formula_or_struct)
+    elif isinstance(compo_formula_or_struct, Structure):
+        composition = compo_formula_or_struct.composition
+    elif isinstance(compo_formula_or_struct, Composition):
+        composition = compo_formula_or_struct
+    else:
+        raise TypeError('compo_formula_or_struct should be a pymatgen '
+                        'composition or structure or a chemical formula.')
+    return composition
+
+def find_neutral_oxidation_state_combinations(compo_formula_or_struct,
+                                              fixed_oxidation_states=None,
+                                              return_scores=True,
+                                              verbosity=1):
+    """
+    Find combinations of oxidation states that result in a neutral global charge for a given composition.
+
+    Args:
+        compo_formula_or_struct: Composition, str or Structure
+            composition, formula or Structure
+        fixed_oxidation_states: dict or None (default is None)
+            A dictionary of elements and oxidation states that should
+            be fixed (e.g. {'O': -2})
+        return_scores: bool (default is True)
+            whether neutral combination scores should be returned
+        verbosity: int (default is 1)
+            verbosity level
+
+    Returns:
+        list: A list of dictionaries, where each dictionary represents a combination of oxidation states
+              that results in a neutral global charge.
+    """
+    composition = get_composition(compo_formula_or_struct)
+    if verbosity >= 2:
+        print(f'Input composition is {composition}')
+
+    # Get the Elements (rather than Species) in the composition
+    elements = []
+    for el_or_sp in composition:
+        if isinstance(el_or_sp, Species):
+            elements.append(el_or_sp.element)
+        elif isinstance(el_or_sp, Element):
+            elements.append(el_or_sp)
+    if verbosity >= 3:
+        print(f'Possible and common oxidation states in {composition.reduced_formula}: ')
+        for el in elements:
+            print(f'{el.name} has  possible ox. states '
+                  f'{el.oxidation_states} and common ox. states  '
+                  f'{el.common_oxidation_states}.')
+
+    # Get possible oxidation states for each element
+    possible_oxidation_states = []
+    for element in elements:
+        if (isinstance(fixed_oxidation_states, dict)
+            and element.name in fixed_oxidation_states.keys()):
+            # TODO check if int or list
+            if isinstance(fixed_oxidation_states[element.name], int):
+                oxidation_states = [fixed_oxidation_states[element.name]]
+            else:
+                oxidation_states = fixed_oxidation_states[element.name]
+            if verbosity >= 2:
+                print(f'{element} oxidation_states fixed to {oxidation_states}')
+
+        else:
+            oxidation_states = element.oxidation_states
+
+        possible_oxidation_states.append(oxidation_states)
+
+    # Generate all possible combinations of oxidation states
+    oxidation_state_combinations = list(product(*possible_oxidation_states))
+
+    # Check which combinations result in a neutral global charge
+    neutral_combinations = []
+    for combination in oxidation_state_combinations:
+        total_charge = 0
+        for element, oxidation_state in zip(elements, combination):
+            # Calculate the total charge for the current combination
+            total_charge += composition[element] * oxidation_state
+
+        # Check if the total charge is zero (neutral)
+        if total_charge == 0:
+            neutral_combinations.append(dict(zip(elements, combination)))
+
+    if not len(neutral_combinations):
+        error_msg = ('No neutral charge compatible with possible oxidation ' +
+                     f'states could be found for {composition.reduced_formula}.')
+        raise ValueError(error_msg)
+
+
+    # Rank combinations by plausibility:
+    scores = []
+    for neutral_combination in neutral_combinations:
+        score = 0
+        for element, oxidation_state in neutral_combination.items():
+            if oxidation_state in element.common_oxidation_states:
+                score += 1
+        scores.append(score)
+
+    sorted_indexes = np.argsort(scores)[::-1]
+
+    neutral_combinations = [neutral_combinations[i] for i in sorted_indexes]
+    scores = [scores[i] for i in sorted_indexes]
+
+    if verbosity >= 1:
+        for i, (nc, score) in enumerate(zip(neutral_combinations, scores)):
+            print(f'combination {i + 1} out of {len(scores)} with score {score}')
+            print({k.name: v for k, v in nc.items()})
+
+    if return_scores:
+        return neutral_combinations, scores
+    else:
+        return neutral_combinations
+
+
+def get_plausible_oxidation_states(compo_formula_or_struct,
+                                   fixed_oxidation_states=None,
+                                   return_species=True,
+                                   return_all_best_combinations=False,
+                                   raise_error_for_uncommon_ox_states=True, 
+                                   verbosity=1):
+    """
+    Find the most likely oxidation states of all elements for a given composition.
+
+    Args:
+        compo_formula_or_struct: Composition, str or Structure
+            composition, formula or Structure
+        fixed_oxidation_states: dict or None (default is None)
+            A dictionary of elements and oxidation states that should
+            be fixed (e.g. {'O': -2})
+        return_species: bool (default is True)
+            Return a list of Species instances (element with
+            oxidation state) will be returned. If False, a dictionary
+            of element names and oxidation states will be returned instead
+            (or a list thereof if return_all_best_combinations is True).
+        return_all_best_combinations: bool (default is False)
+            In the case where several combinations share the highest
+            score, a list of all will be returned instead of one.
+        raise_error_for_uncommon_ox_states: bool (default is True)
+            A ValueError will be raised if uncommon oxidation states
+            are required to satisfy charge neutrality.
+            If False, a simple warning will be thrown.
+        verbosity: int (default is 1)
+            verbosity level
+
+    Returns:
+        list: dictionary of elements and oxidation states or list of species
+            or even a list of list or dictionnaries if return_all_best_combinations
+            is True.
+    """
+    composition = get_composition(compo_formula_or_struct)
+    formula = composition.reduced_formula
+    neutral_combinations, scores = find_neutral_oxidation_state_combinations(
+        composition, fixed_oxidation_states=fixed_oxidation_states,
+        return_scores=True, verbosity=verbosity)
+
+    # count the number of best-scores
+    if not len(scores):
+        error_msg = ('No neutral combination compatible with possible ' +
+                     f'oxidation states could be found for {formula}.')
+        raise ValueError(error_msg)
+
+    # Count the number of uncommon ox_states
+    best_score = scores[0]  # should be equal to the number of elements
+                            # if all oxidation states in the best combination
+                            # are common.
+    nb_of_elements = len(neutral_combinations[0])
+    nb_of_uncommon_ox_states = nb_of_elements - best_score
+    if  nb_of_uncommon_ox_states:
+        error_msg = ('At least {} elements must be in an uncommon oxidation state '
+                    'to obtain a neutral charge for {}.').format(
+                        nb_of_uncommon_ox_states, formula)
+        if raise_error_for_uncommon_ox_states:
+            raise ValueError(error_msg)
+        else:
+            warn(warn_msg)
+
+    if len(scores) > 1 and scores[1] == scores[0]:
+        warn(f'Several combinations of oxidation states were found for {formula}.')
+        print('One of these combinations is : {}'.format(
+            {k.name: v for k, v in neutral_combinations[0].items()}))
+    else:
+        print(('The most plausible combination of oxidation states for {} '
+               ' is: {}').format(
+               formula,
+               {k.name: v for k, v in neutral_combinations[0].items()}))
+
+    if return_all_best_combinations:
+        best_combinations = []
+        i = -1
+        while 1:
+            i += 1
+            if i >= len(scores):
+                if verbosity >= 3:
+                    print('All combinations have been explored. Exiting while loop.')
+                break
+                
+            if scores[i] < best_score:
+                if verbosity >= 2:
+                    print(f'All {i-1} best-score ({best_score}/{nb_of_elements}) '
+                          f' combinations have been considered.')
+                break
+            
+            if verbosity >= 3:
+                print(('Considering neutral combination {} out of {} with '
+                       'score {}/{}').format(i, len(neutral_combinations),
+                                             scores[i], nb_of_elements))
+
+            if return_species:
+                combination = [Species(k, v) for k, v in neutral_combinations[i].items()]
+            else:
+                combination = {el.name: ox_state for el, ox_state
+                               in neutral_combinations[i].items()}
+
+            best_combinations.append(combination)
+            if verbosity >= 2:
+                print(('Neutral combination {} out of {} with '
+                       'best score ({}/{}) wad added: {}').format(i,
+                        len(neutral_combinations), scores[i], nb_of_elements,
+                        combination))
+
+        if verbosity >= 1:
+            print(('{} combination with the best score ({}/{}) will be '
+                  'returned.').format(len(best_combinations), best_score,
+                                      nb_of_elements))
+            for combination in best_combinations:
+                print(combination)
+
+        return best_combinations
+
+    else:
+        _ = ('Returning best neutral combination of oxidation states for ' +
+             f'{formula} as a ')
+        if return_species:
+            list_of_species = [Species(k, v) for k, v in neutral_combinations[0].items()]
+            if verbosity >= 2:
+                print(f'list of Species: {list_of_species}.')
+            return list_of_species
+        else:
+            dict_of_names_and_ox_states = {el.name: ox_state for el, ox_state
+                                           in neutral_combinations[0].items()}
+            if verbosity >= 2:
+                print('dictionary of element names and oxidation states: '
+                      f'{dict_of_names_and_ox_states}.')
+            return dict_of_names_and_ox_states
+
 
