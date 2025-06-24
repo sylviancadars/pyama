@@ -10,6 +10,7 @@ from pymatgen.core.units import Energy, Length, FloatWithUnit
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.core.composition import Composition
 from pymatgen.core.periodic_table import Species, Element
+from pymatgen.transformations.standard_transformations import OxidationStateDecorationTransformation
 
 import os
 from subprocess import call
@@ -1166,6 +1167,7 @@ def get_composition(compo_formula_or_struct):
                         'composition or structure or a chemical formula.')
     return composition
 
+
 def find_neutral_oxidation_state_combinations(compo_formula_or_struct,
                                               fixed_oxidation_states=None,
                                               return_scores=True,
@@ -1402,3 +1404,53 @@ def get_plausible_oxidation_states(compo_formula_or_struct,
             return dict_of_names_and_ox_states
 
 
+def guess_structure_oxidation_states(structure, 
+                                     fixed_oxidation_states=None,
+                                     raise_error_for_uncommon_ox_states=True, 
+                                     verbosity=1):
+    """
+    TO BE COMPLETED
+    """
+    # TODO: try to set oxidation states with pymatgen
+    new_structure = get_pymatgen_structure(structure).copy()
+    new_structure.add_oxidation_state_by_guess()
+    formula = new_structure.composition.reduced_formula
+    
+    use_pymatgen_oxi_states = True
+    
+    if all([s.oxi_state == 0 for s in new_structure.composition.elements]):
+        if verbosity >= 2:
+            print('Pymatgen add_oxidation_state_by_guess method found 0 ox. states'
+                  ' for all atom types in {formula} structure.')
+        use_pymatgen_oxi_states = False
+    
+    elif fixed_oxidation_states:
+        for atom_type, ox_states in fixed_oxidation_states.items():
+            _ox_states = [ox_states] if isinstance(ox_states, int) else ox_states
+                
+            for site_index, species in enumerate(new_structure.species):
+                site_type = species.element.name
+                site_ox_state = species.oxi_state
+                if site_type == atom_type:
+                    if site_ox_state not in _ox_states:
+                        if verbosity >= 2:
+                            print(f'Oxidation state of {site_type} site with index {site_index} '
+                                  f'({site_ox_state}) is not  within the list of '
+                                  f'fixed_oxidation_states ({ox_states})')
+                            
+    if not use_pymatgen_oxi_states:
+        if verbosity >= 2:
+            print('Trying to guess oxidation states with Pyama get_plausible_oxidation_states.')
+        
+        best_combination = get_plausible_oxidation_states(new_structure, 
+                                       fixed_oxidation_states=fixed_oxidation_states,
+                                       return_species=True,
+                                       return_all_best_combinations=False,
+                                       raise_error_for_uncommon_ox_states=raise_error_for_uncommon_ox_states, 
+                                       verbosity=verbosity)
+        
+        osdt = OxidationStateDecorationTransformation({s.element.name: s.oxi_state for s in best_combination})
+        new_structure = osdt.apply_transformation()
+    
+    return new_structure
+    
