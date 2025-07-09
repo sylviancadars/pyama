@@ -1075,7 +1075,7 @@ class uspexStructuresData():
                                   pick_lowest_energy=True,
                                   pick_highest_energy=True,
                                   sigma=None, r_max=None, seed=None,
-                                  show_full_distance_matrix=True):
+                                  show_full_distance_matrix=False):
         """
         Divide energy range in bins and maximize distance between picked
         structures in adjacent bins.
@@ -1089,6 +1089,9 @@ class uspexStructuresData():
             (or all structures if less than this)
         (4) For each struct in segment:
             calculate distance to all previously-selected structures
+
+        TODO: enforce the number of output structures in cases where scare
+              high-energy or low-energy structures result in empty bins
 
         Args:
             TO BE COMPLETED
@@ -1112,11 +1115,35 @@ class uspexStructuresData():
 
         global_distance_matrix = np.zeros((len(sorted_IDs), len(sorted_IDs)))
 
-        # split into energy segments
-        hist, bin_edges = np.histogram(sorted_E_rel, bins=nb_of_structures)
-        _ = np.digitize(sorted_E_rel, bin_edges, right=False)
-        bin_indexes = np.where(_ == nb_of_structures + 1, nb_of_structures, _) - 1
-
+        # TODO: initialize nb_of_bins to nb_of_structures and increase until
+        # the nb_of_occupied_bins is equal to nb_of_structures
+        
+        nb_of_bins = nb_of_structures
+        nb_of_occupied_bins = 0
+        while 1:
+            nb_of_occupied_bins = 0
+            # split into energy segments
+            hist, bin_edges = np.histogram(sorted_E_rel, bins=nb_of_bins)
+            _ = np.digitize(sorted_E_rel, bin_edges, right=False)
+            bin_indexes = np.where(_ == nb_of_bins + 1, nb_of_bins, _) - 1
+            
+            for i, bin_pop in enumerate(hist):
+                IDs_in_bin = [ID for ID in sorted_IDs[bin_indexes == i]
+                              if ID not in selected_ids]
+                if len(IDs_in_bin) > 0:
+                    nb_of_occupied_bins += 1
+            
+            if nb_of_occupied_bins >= nb_of_structures:
+                self.print(f'Splitting the energy range in {nb_of_bins} yields '
+                           f'{nb_of_occupied_bins} occupied bins, matching the '
+                           f'targeted number of structures.', verb_th=1)
+                break
+            
+            self.print(f'Only {nb_of_occupied_bins} out of {nb_of_bins} contained '
+                       f'structures for a target of {nb_of_structures} structures. '
+                       'Incrementing the number of bins.', verb_th=2)
+            nb_of_bins += 1
+            
         struct_index = 0
         for i, bin_pop in enumerate(hist):
             IDs_in_bin = [ID for ID in sorted_IDs[bin_indexes == i]
@@ -1161,7 +1188,7 @@ class uspexStructuresData():
                     selected_ids.append(picked_ids[np.argmax(_d)])
 
             else:  # the current bin (with index i) is empty
-                if i < nb_of_structures - 1:
+                if i < nb_of_bins - 1:
                     # append lowest-energy structure from the first non-empty bin above
                     incr = 1
                     while i + incr < len(hist):
@@ -1171,8 +1198,8 @@ class uspexStructuresData():
                             selected_ids.append(IDs_in_next_bin[0])
                             break
                         incr += 1
-                    print(('WARNING: No non-empty bins have been found the current one. '
-                           'The final number of tructures could be lower than requested.'))
+                    self.print('No occupied bins have been found above the current one. '
+                               'Check final number of structures.', verb_th=1)
                 elif i > 0:
                     # append not-yet-picked highest-energy structure from bin below
                     incr  = 1
@@ -1189,14 +1216,19 @@ class uspexStructuresData():
                     print('i = {} ; bin_pop = {} ; struct_index = {}'.format(
                         i, bin_pop, struct_index))
 
-        self.print('Calculating distances between selected structures:\n {}'.format(
-            selected_ids), verb_th=1)
-        selected_dist_matrix = self.get_cosine_distance_matrix(selected_ids)
-        self.print(selected_dist_matrix, verb_th=2)
-
         result = (selected_ids, seed)
 
+        # TODO: enforce the exact number of structures by eliminating the structure with
+        # the shortest 2 distances to others (because sortest distance yields 2 structures)
+
+        if self.verbosity >= 2:
+                self.print('Calculating distances between selected structures:\n {}'.format(
+                    selected_ids), verb_th=2)
+                selected_dist_matrix = self.get_cosine_distance_matrix(selected_ids)
+                self.print(selected_dist_matrix, verb_th=2)
+
         if show_full_distance_matrix:
+            
             sorted_distance_matrix = np.take(np.take(
                 self.distance_matrix, sorted_indexes, axis=0), sorted_indexes, axis=1)
             self.print('sorted_distance_matrix = \n{}'.format(sorted_distance_matrix),
