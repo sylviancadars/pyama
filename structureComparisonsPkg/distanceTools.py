@@ -13,13 +13,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 import pickle
-import time
+from time import perf_counter
 from scipy.spatial.distance import pdist, squareform, cosine
 
-from dscribe.descriptors import SOAP
+from dscribe.descriptors import SOAP, ValleOganov
 from dscribe.kernels import REMatchKernel
 
 from sklearn.preprocessing import normalize
+
+from pyama.utils import get_ase_atoms, get_pymatgen_structure
 
 
 class distanceMatrixData() :
@@ -138,7 +140,7 @@ class distanceMatrixData() :
                 partials[type.index(A), type.index(B), :]
         """
         if self.print_performance:
-            tic = time.perf_counter()
+            tic = perf_counter()
         R = self.R
         sigma = self.sigma
         Rmax = self.Rmax
@@ -153,10 +155,10 @@ class distanceMatrixData() :
         nb_of_atoms_of_type = [len(struct.indices_from_symbol(t)) for t in types]
 
         if self.print_performance:
-            tic_pmg_get_nbrs = time.perf_counter()
+            tic_pmg_get_nbrs = perf_counter()
         all_nbrs = struct.get_all_neighbors(Rmax)
         if self.print_performance:
-            tac_pmg_get_nbrs = time.perf_counter()
+            tac_pmg_get_nbrs = perf_counter()
 
         len_R = len(R)
         all_partials = np.zeros((len(types), len(types), len(R)))
@@ -195,7 +197,7 @@ class distanceMatrixData() :
             print(('Execution of function calculate_all_partial_RDFs for {} took '
                    '{:.1f} ms (including {:.1f} ms for pymatgen '
                    'get_all_neighbors()).').format(structure.formula,
-                  1000*(time.perf_counter()-tic),
+                  1000*(perf_counter()-tic),
                   1000*(tac_pmg_get_nbrs-tic_pmg_get_nbrs)))
 
         if showPlot:
@@ -281,7 +283,7 @@ class distanceMatrixData() :
 
         print('Calculating {}-{} partial RDF.'.format(specieA, specieB))
 
-        tic = time.perf_counter()
+        tic = perf_counter()
         intermediate_tics = []
         performance = {}
         perf_steps = ['reduced_struct', 'get_neighbors', 'R_ij', 'R_ij_tab', 'R_tab',
@@ -305,13 +307,13 @@ class distanceMatrixData() :
         # AInCellIndexes = [index for index,site in enumerate(structure.sites) if specieA in site.specie.symbol]
         # Can be obtained directly with structure.indices_from_symbol : structure.indices_from_symbol('As'))
 
-        tic2 = time.perf_counter()
+        tic2 = perf_counter()
         reduced_struct = IStructure.from_sites([
             structure.sites[index] for index in
             set(structure.indices_from_symbol(specieA)) |
             set(structure.indices_from_symbol(specieB))])
 
-        performance['reduced_struct'] = [time.perf_counter() - tic2]
+        performance['reduced_struct'] = [perf_counter() - tic2]
 
         AInCellIndexes = list(reduced_struct.indices_from_symbol(specieA))
         AIndexesSet = set(AInCellIndexes)
@@ -328,43 +330,43 @@ class distanceMatrixData() :
 
         g_AB = np.zeros((len(R),))
 
-        tic2 = time.perf_counter()
+        tic2 = perf_counter()
         all_nbrs = reduced_struct.get_all_neighbors(Rmax)
-        performance['get_neighbors'] = [time.perf_counter() - tic2]
+        performance['get_neighbors'] = [perf_counter() - tic2]
 
-        intermediate_tics = [time.perf_counter()]
+        intermediate_tics = [perf_counter()]
         # Pick sites of type A
 
         g_AB = np.zeros((len(R),))
         for index, nbrs in enumerate(all_nbrs):
             if reduced_struct.sites[index].species.elements[0].name == specieA:
                 # Calculate R_ij distances and reshape R_ij and R as tables of dimension(len(R_ij),len(R))
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 R_ij = [nbr.nn_distance for nbr in nbrs if
                         nbr.species.elements[0].name == specieB]
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 R_ij_tab = np.matmul(np.reshape(R_ij,(len(R_ij),1)) ,
                                      np.ones((1,len(R))) )
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 R_tab = np.matmul( np.ones((len(R_ij),1)) ,
                                   np.reshape(R,(1,len(R))) )
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 # The Gaussian smearing normalization takes R into account to ensure that sum(delta_ij)~=1
                 delta_ij = (Rmax/(sigma*np.sqrt(2*np.pi)*len(R)))*np.exp(
                     -0.5*np.square((R_tab-R_ij_tab)/sigma))
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 g_AB_ij = np.divide(delta_ij , 4*np.pi*np.square(R_ij_tab)*
                                     N_A*N_B*DELTA/V )
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 g_AB = np.add(g_AB,np.sum(g_AB_ij,axis=0))
-                intermediate_tics.append(time.perf_counter())
+                intermediate_tics.append(perf_counter())
                 for i, s in enumerate(perf_steps[2:]):
                     performance[s].append(intermediate_tics[i+1]-intermediate_tics[i])
 
         if self.print_performance:
             print(('Execution of function calculate_partial_RDF for {}-{} took '
                    '{:.3f} ms.').format(specieA, specieB,
-                                        1000*(time.perf_counter()-tic)))
+                                        1000*(perf_counter()-tic)))
             for k, v in performance.items():
                 print('Calculations of {} took {:.3f} ms.'.format(k,
                                                                   1000*sum(v)))
@@ -514,7 +516,7 @@ class distanceMatrixData() :
             return 1.0
 
         if self.print_performance:
-            tic = time.perf_counter()
+            tic = perf_counter()
         listOfAtomTypes = types_1
         nbOfAtomTypes = len(listOfAtomTypes)
         compo1 = structure1.composition.remove_charges()
@@ -569,7 +571,7 @@ class distanceMatrixData() :
 
         if self.print_performance:
             print(('Calculation of distance between structures took {:.1f} ms'
-                   ).format(1000 * (time.perf_counter() - tic)))
+                   ).format(1000 * (perf_counter() - tic)))
 
         # TODO : insert here other definitions of distances between structures
         # elif self.distanceMethod == 'DISTANCE_METHOD_NAME'
@@ -669,7 +671,7 @@ class distanceMatrixData() :
                                  axesLabel:str='',tickLabelsFontSize:int=0,
                                  xticklabelsRotation=45, cmap=None) :
         """
-        Plot distance matrix
+        Plot distance matrix (OLD METHOD, DEPRECATED)
 
         Args:
             systemName: str, OPTIONAL
@@ -851,7 +853,7 @@ class distanceMatrixData() :
             return sorted_structures, sorted_indexes, indexes_in_orig_struct
         else:
             return sorted_structures
-
+    
 
     def save_data_to_file(self,saveFileName='') :
         """
@@ -869,6 +871,118 @@ class distanceMatrixData() :
 
 
 # end of class distanceMatrixData
+
+
+def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None, 
+                                                 function="distance",
+                                                 sigma=0.1, n=100, r_cut=8.0, 
+                                                 n_jobs=1, sparse=False, dtype="float32", 
+                                                 distance_metric='cosine', show_plot=False,
+                                                 structure_names=None, axesLabel:str='',
+                                                 tickLabelsFontSize:int=0,
+                                                 xticklabelsRotation=45, cmap=None,
+                                                 verbosity=1, **vo_kwargs):
+    """
+    Get a distance matrix from a list of structures using the Valle Oganiv approach 
+    as implemented in Dscribe
+    
+    
+    Args:
+        structures, 
+        species: list or tuple (default is None)
+            The chemical species as a list of atomic numbers or as a list of chemical symbols. 
+            Notice that this is not the atomic numbers that are present for an individual system, 
+            but should contain all the elements that are ever going to be encountered when 
+            creating the descriptors for a set of systems. Keeping the number of chemical 
+            species as low as possible is preferable.
+            If None all species included in structures will be used.
+        function: str (default is "distance")
+            The geometry function The order (k=2 for "ditances" and k = 3 for "angles" tells 
+            how many atoms are involved in the calculation and thus also heavily 
+            influences the computational time.
+        sigma: float (default is 0.1)
+            Standard deviation of the gaussian broadening in Å.
+        n: int (default: 100)
+            Number of discretization points
+        r_cut: float( default is 8.0)
+            cutoff radius in Å.
+        n_jobs: int: (default is 1)
+            number of processors used for the calculation of the distance matrix
+        distance_metric: str (default is 'cosine')
+            Metric for the distance measurement. Default is a 0-1 cosine measurement.
+            (see scipy pdist for other possibilities).
+        sparse: bool (defalut is False)
+            Whether result should be returned as a numpy sparse matrix.
+        dtype: str (default is "float64")
+            Numpy dtype of output distance matrix
+        tickLabels: list, OPTIONAL
+            default is [] in wich case structure IDs (if any) or structure
+            indexes will be used.
+        axesLabel: str, OPTIONAL
+            Default is ''.
+        tickLabelsFontSize: int, OPTIONAL
+            will change font size of tick labels (e.g. set to 6 or less if
+            matrix size is equal to 50).
+        xticklabelsRotation: float or {'horizontal','vertical'}, OPTIONAL
+            Based on matplotlib.text.Text rotation option. Default is 45.
+        cmap: str, matplotlib.colors.LinearSegmentedColormap or None
+            if None a red-gold-green map will be used. If 'default' the default
+            matplotlib cmap (blue-green-yellow) will be used.
+        verbosity: int (default is 1)
+            Verbosity level
+            
+    Returns:
+        distance_matrix: numpy.ndarray
+            square matrix of dimension (N, N) where N = len(structures)
+        fig: matplotlib.figure
+            Figure handle (only if show_plot is True)
+        ax: matplotlib.axes
+            Axes handle
+    """
+    # Get a list of atoms and a list of pymatgen structures
+    atoms_list = [get_ase_atoms(s) for s in structures]  
+    
+    # Define species
+    if not species:
+        species = list(set.intersection(*[set(atoms.get_chemical_symbols()) for atoms in atoms_list]))
+        species.sort()
+        
+    vo = ValleOganov(species=species, function=function, sigma=sigma, 
+                    n=n, r_cut=r_cut, **vo_kwargs)
+
+    if verbosity >= 2:
+        tic = perf_counter()
+        print(f"Calculating Valle-Oganov descriptors (fingerprints) for {len(atoms_list)} "
+              f"atomic structures...")
+    
+    # Calculate descriptors
+    vo_descr_vect = vo.create(atoms_list, n_jobs=n_jobs)
+    
+    if verbosity >= 2:
+        print(f"... took {perf_counter() - tic:.3f} s.")
+    
+    if verbosity >= 2:
+        tic = perf_counter()
+        print(f"Calculating distance matrix for {len(atoms_list)} atomic structures...")
+    
+    # Calculate distance matrix
+    distance_matrix = squareform(pdist(vo_descr_vect, metric=distance_metric))
+    
+    if verbosity >= 2:
+        print(f"... took {perf_counter() - tic:.3f} s.")
+    
+    if show_plot:
+        pmg_structures = [get_pymatgen_structure(s) for s in structures]
+        if structure_names is None:
+            structure_names = ['{} # {}'.format(s.composition.reduced_formula, i)
+                               for i, s in enumerate(pmg_structures)]
+        fig, ax = plot_distance_matrix(distance_matrix, pmg_structures, structure_names,
+                                       axesLabel=axesLabel, tickLabelsFontSize=tickLabelsFontSize,
+                                       xticklabelsRotation=xticklabelsRotation, cmap=cmap)
+        return distance_matrix, fig, ax
+    else:
+        return distance_matrix
+
 
 def get_distance_matrix_from_average_soap(structures, soap_weighting='poly',
                                           soap_n_max=8, soap_l_max=6, soap_r_cut=8.0,
@@ -958,6 +1072,7 @@ def get_distance_matrix_from_average_soap(structures, soap_weighting='poly',
         return distance_matrix, fig, ax
     else:
         return distance_matrix
+
 
 def get_similarity_map_from_soap_rematchkernel(structures, 
                                                soap_weighting='poly', soap_n_max=5, soap_l_max=4, 
@@ -1165,5 +1280,68 @@ def plot_distance_matrix(distance_matrix=None, structures=None,
     plt.colorbar(im, ax=ax, orientation='vertical',label='Distance')
 
     return fig, ax
+
+
+def get_partial_from_valle_oganov_dscribe(system, type_pair, species=None, 
+                                          function='distance', n=100, 
+                                          sigma=0.1, r_cut=8.0,  
+                                          show_plot=True, use_reduced=False, 
+                                          description=None, **vo_kwargs):
+    
+    if len(type_pair) != 2:
+        raise ValueError('type_pair should be a list of lenght 2.')
+    
+    pair_name = type_pair[0]
+    for elmt in type_pair[1:]:
+        pair_name += f"-{elmt}"
+        
+    atoms = get_ase_atoms(system)
+    
+    if not species:
+        species = list(set(atoms.get_chemical_symbols()))
+        species.sort()
+        
+    vo = ValleOganov(species, function, n, sigma, r_cut, **vo_kwargs)    
+    descriptor = vo.create(atoms)
+    
+    r = np.linspace(vo.grid["min"], vo.grid["max"], vo.grid["n"])
+    rho_0 = len(atoms) / atoms.get_volume()
+    
+    g_AB = descriptor[vo.get_location(type_pair)]
+    G_AB = 4 * np.pi * rho_0 * r * (g_AB - 1)
+    
+    partial = {
+        'pair': list(type_pair), 
+        'pair_name': pair_name, 
+        'r': r, 
+        'partial': g_AB, 
+        'reduced_partial': G_AB, 
+        'xlabel': 'r (Å)', 
+        'ylabel': f"{pair_name} partial RDF", 
+        'ylabel_reduced': f"{pair_name} reduced partial RDF", 
+    }
+    
+    if show_plot:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        y = partial['reduced_partial'] if use_reduced else partial['partial']
+        ax.plot(partial['r'], y, label=f"{pair_name} partial")
+        if not description:
+            description = f"{atoms.get_chemical_formula()} {pair_name} partial pair distribution function"
+        
+        ylabel = partial['ylabel'] if use_reduced else partial['ylabel']
+        ax.set(title=description, xlabel=partial['xlabel'], ylabel=ylabel)
+        
+        return partial, fig, ax
+        
+    else:
+        return partial
+
+    
+    
+    
+    
+    
+    
 
 
