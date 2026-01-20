@@ -15,16 +15,19 @@ from matplotlib.colors import LinearSegmentedColormap
 import pickle
 from time import perf_counter
 from scipy.spatial.distance import pdist, squareform, cosine
-
+from multiprocessing import cpu_count
+from plotly import express as px
+from pandas import DataFrame
 from dscribe.descriptors import SOAP, ValleOganov
 from dscribe.kernels import REMatchKernel
 
 from sklearn.preprocessing import normalize
+from sklearn.manifold import MDS
 
-from pyama.utils import get_ase_atoms, get_pymatgen_structure
+from pyama.utils import get_ase_atoms, get_pymatgen_structure, BaseDataClass
 
 
-class distanceMatrixData() :
+class distanceMatrixData(BaseDataClass) :
     """
     Class designed to calculate and store information on distance matrices between structures
 
@@ -44,7 +47,7 @@ class distanceMatrixData() :
     def __init__(self, IDs:list=[], descriptions:list=[], distanceMethod:str='cosine',
                  fingerprintMethod:str='OganovValle2009', sigma:float=0.02,
                  R=None, Rmax:float=6.0, Rsteps:float=512, print_performance=False,
-                 **kwargs) :
+                 verbosity=1, **kwargs) :
         """
         Class initializer with
 
@@ -86,6 +89,10 @@ class distanceMatrixData() :
 
         """
 
+        super().__init__(verbosity=verbosity,
+                         print_to_console=True,
+                         print_to_file=False)
+
         self.IDs = IDs
         self.descriptions=descriptions
         self.distanceMethod = distanceMethod
@@ -112,9 +119,10 @@ class distanceMatrixData() :
             self.saveFileName = 'tmp.pkl'
         self.print_performance = print_performance
 
-
+    
     def calculate_all_partial_RDFs(self, structure, showPlot=False,
-                                   rel_y_shift=0.25):
+                                       rel_y_shift=0.25, n_jobs=1, 
+                                       **vo_kwargs):
         """
         Calculate all partial radial distributions functions for a structure
 
@@ -153,52 +161,32 @@ class distanceMatrixData() :
         # Get list of elements
         types = [i.name for i in struct.types_of_species]
         nb_of_atoms_of_type = [len(struct.indices_from_symbol(t)) for t in types]
+        
+        atoms = get_ase_atoms(structure)
 
-        if self.print_performance:
-            tic_pmg_get_nbrs = perf_counter()
-        all_nbrs = struct.get_all_neighbors(Rmax)
-        if self.print_performance:
-            tac_pmg_get_nbrs = perf_counter()
+        vo = ValleOganov(species=types, function="distance", 
+                         n=len(self.R), sigma=self.sigma, r_cut=self.Rmax, 
+                         **vo_kwargs)        
+        tic_create_descriptor = perf_counter()
+        descriptor = vo.create(atoms, n_jobs=n_jobs)
+        tac_create_descriptor = perf_counter()
 
-        len_R = len(R)
         all_partials = np.zeros((len(types), len(types), len(R)))
+        
         for type_ind_A, type_A in enumerate(types):
             A_indexes = struct.indices_from_symbol(type_A)
             N_A = nb_of_atoms_of_type[type_ind_A]
-            for A_index in A_indexes:
-                for type_ind_B, type_B in enumerate(types[:type_ind_A+1]):
-                    N_B = nb_of_atoms_of_type[type_ind_B]
-                    B_nbr_indexes = [i for i, nbr in enumerate(all_nbrs[A_index])
-                                     if nbr.species.elements[0].name == type_B]
-
-                    R_ij = [all_nbrs[A_index][B_nbr_index].nn_distance for
-                            B_nbr_index in B_nbr_indexes]
-                    len_R_ij = len(R_ij)
-                    R_ij_tab = np.matmul(np.reshape(R_ij,(len_R_ij,1)) ,
-                                         np.ones((1,len_R)))
-                    R_tab = np.matmul(np.ones((len_R_ij,1)) ,
-                                      np.reshape(R,(1,len_R)))
-                    delta_ij = (Rmax/(sigma*np.sqrt(2*np.pi)*len_R))*np.exp(
-                        -0.5*np.square((R_tab-R_ij_tab)/sigma))
-                    g_AB_ij = np.divide(delta_ij , 4*np.pi*np.square(R_ij_tab)*
-                                        N_A*N_B*DELTA/V)
-                    all_partials[type_ind_A, type_ind_B, :] = np.add(
-                        all_partials[type_ind_A, type_ind_B, :],
-                        np.sum(g_AB_ij,axis=0))
-
-        # Symmetrize all_partials
-        for type_ind_A, type_A in enumerate(types):
-            for type_B in types[type_ind_A+1:]:
-                type_ind_B = types.index(type_B)
-                all_partials[type_ind_A, type_ind_B, :] = all_partials[
-                    type_ind_B, type_ind_A, :]
+            for type_ind_B, type_B in enumerate(types[:type_ind_A+1]):
+                
+                all_partials[type_ind_A, type_ind_B, :] = vo.get_location([type_A, type_B])
+                all_partials[type_ind_B, type_ind_B, :] = all_partials[type_ind_B, type_ind_A, :]
 
         if self.print_performance:
             print(('Execution of function calculate_all_partial_RDFs for {} took '
-                   '{:.1f} ms (including {:.1f} ms for pymatgen '
+                   '{:.1f} ms (including {:.1f} ms to create descriptor '
                    'get_all_neighbors()).').format(structure.formula,
                   1000*(perf_counter()-tic),
-                  1000*(tac_pmg_get_nbrs-tic_pmg_get_nbrs)))
+                  1000*(tac_create_descriptor-tic_create_descriptor)))
 
         if showPlot:
             fig, ax = plt.subplots()
@@ -252,347 +240,85 @@ class distanceMatrixData() :
         else:
             return G_AB, types
 
-
-    def calculate_partial_RDF(self,structure,specieA,specieB,**kwargs) :
+    def calculate_cosine_distance(self, structure_1: Structure, structure_2: Structure,  
+                                  show_plot: bool=False, system_names: list=None, 
+                                  n_jobs=1, **vo_kwargs):
         """
-        Calculate pairwise fingerprint function as defined in Oganov A.R. and Valle M. J. Chem. Phys. 130(10), 2009
-
-        Implementation based on equation (3) in :
-        Oganov, Artem R., et Mario Valle. « How to Quantify Energy Landscapes of Solids ». The Journal of Chemical Physics 130, nᵒ 10 (14 mars 2009): 104504. https://doi.org/10.1063/1.3079326.
-
-        Should only be used in the case where ony one specific partial RDF
-        is needed. Even when only 2 types of species are present in the system
-        it is much more efficient to use calculate_all_partial_RDFs (or
-        calculate_all_reduced_partial_RDFs).
-
-        args :
-            - structure : object of pymatgen.core.structure Structure class
-            - speciesA : first species name as a string (eg. 'Al', 'N', etc.)
-            - speciesB : second species name as a string (eg. 'Al', 'N', etc.)
-            - sigma : Gaussian smearing factor (standard deviation)
-            - Rmax : cutoff radius for neighbor search and maximum value of array of R values (starting at 0)
-            - Rsteps : number of bins for R discretization
-
-        Optional arguments :
-            - showPlot : (default = False)
-            - R : R array (should be ordered with constant step)
-        returns :
-            g_AB(R) where b_AB(R) is the partial RDF between (A,B) species
-            calculated for the vector of radial distances R.
+        Docstring for calculate_cosine_distance
+        
+        :param self: Description
+        :param structure_1: Description
+        :type structure_1: Structure
+        :param structure_2: Description
+        :type structure_2: Structure
+        :param show_plot: Description
+        :type show_plot: bool
+        :param system_names Description
+        :type system_names: list
+        :param vo_kwargs: Description
         """
+        atoms_1 = get_ase_atoms(structure_1)
+        atoms_2 = get_ase_atoms(structure_2)
+        species = set.union(set(atoms_1.get_chemical_symbols()), 
+                            set(atoms_2.get_chemical_symbols()))
+        vo = ValleOganov(species=species, function="distance", 
+                         n=len(self.R), sigma=self.sigma, r_cut=self.Rmax, 
+                         **vo_kwargs)      
+        tic_create_descriptor = perf_counter()
+        descriptor = vo.create([atoms_1, atoms_2], n_jobs=n_jobs)
 
-        print('Calculating {}-{} partial RDF.'.format(specieA, specieB))
+        print(f"2-structures descriptor (features) of shape {descriptor.shape}.")
 
-        tic = perf_counter()
-        intermediate_tics = []
-        performance = {}
-        perf_steps = ['reduced_struct', 'get_neighbors', 'R_ij', 'R_ij_tab', 'R_tab',
-                      'delta_ij', 'g_AB_ij', 'g_AB']
-        for s in perf_steps:
-            performance[s] = []
+        cosine_distance = squareform(pdist(descriptor, metric='cosine'))[0][1]
 
-        # import copy
-
-        R = self.R
-        sigma = self.sigma
-        Rmax = self.Rmax
-
-        DELTA = R[1]-R[0] # discretization step
-
-        # Parameters to get from structure
-        V = structure.volume # cell volume
-
-        # TODO: Create a copy of the structure containing only A and B atomic types (only A in case where B = A)
-
-        # AInCellIndexes = [index for index,site in enumerate(structure.sites) if specieA in site.specie.symbol]
-        # Can be obtained directly with structure.indices_from_symbol : structure.indices_from_symbol('As'))
-
-        tic2 = perf_counter()
-        reduced_struct = IStructure.from_sites([
-            structure.sites[index] for index in
-            set(structure.indices_from_symbol(specieA)) |
-            set(structure.indices_from_symbol(specieB))])
-
-        performance['reduced_struct'] = [perf_counter() - tic2]
-
-        AInCellIndexes = list(reduced_struct.indices_from_symbol(specieA))
-        AIndexesSet = set(AInCellIndexes)
-        N_A = len(AInCellIndexes)
-
-        if specieA != specieB:
-            BInCellIndexes = list(reduced_struct.indices_from_symbol(specieB))
-            BIndexesSet = set(BInCellIndexes)
-            N_B = len(BInCellIndexes)
-        else:
-            N_B = N_A
-            BInCellIndexes = AInCellIndexes
-            BIndexesSet = AIndexesSet
-
-        g_AB = np.zeros((len(R),))
-
-        tic2 = perf_counter()
-        all_nbrs = reduced_struct.get_all_neighbors(Rmax)
-        performance['get_neighbors'] = [perf_counter() - tic2]
-
-        intermediate_tics = [perf_counter()]
-        # Pick sites of type A
-
-        g_AB = np.zeros((len(R),))
-        for index, nbrs in enumerate(all_nbrs):
-            if reduced_struct.sites[index].species.elements[0].name == specieA:
-                # Calculate R_ij distances and reshape R_ij and R as tables of dimension(len(R_ij),len(R))
-                intermediate_tics.append(perf_counter())
-                R_ij = [nbr.nn_distance for nbr in nbrs if
-                        nbr.species.elements[0].name == specieB]
-                intermediate_tics.append(perf_counter())
-                R_ij_tab = np.matmul(np.reshape(R_ij,(len(R_ij),1)) ,
-                                     np.ones((1,len(R))) )
-                intermediate_tics.append(perf_counter())
-                R_tab = np.matmul( np.ones((len(R_ij),1)) ,
-                                  np.reshape(R,(1,len(R))) )
-                intermediate_tics.append(perf_counter())
-                # The Gaussian smearing normalization takes R into account to ensure that sum(delta_ij)~=1
-                delta_ij = (Rmax/(sigma*np.sqrt(2*np.pi)*len(R)))*np.exp(
-                    -0.5*np.square((R_tab-R_ij_tab)/sigma))
-                intermediate_tics.append(perf_counter())
-                g_AB_ij = np.divide(delta_ij , 4*np.pi*np.square(R_ij_tab)*
-                                    N_A*N_B*DELTA/V )
-                intermediate_tics.append(perf_counter())
-                g_AB = np.add(g_AB,np.sum(g_AB_ij,axis=0))
-                intermediate_tics.append(perf_counter())
-                for i, s in enumerate(perf_steps[2:]):
-                    performance[s].append(intermediate_tics[i+1]-intermediate_tics[i])
-
-        if self.print_performance:
-            print(('Execution of function calculate_partial_RDF for {}-{} took '
-                   '{:.3f} ms.').format(specieA, specieB,
-                                        1000*(perf_counter()-tic)))
-            for k, v in performance.items():
-                print('Calculations of {} took {:.3f} ms.'.format(k,
-                                                                  1000*sum(v)))
-
-        if 'showPlot' in kwargs :
-            try :
-                if kwargs['showPlot'] == True :
-                    fig, ax = plt.subplots()
-                    ax.plot(R,g_AB)
-                    ax.set(xlabel='R (Angstroms)',
-                            ylabel='g_'+specieA+'_'+specieB+'(R)',
-                            title='Partial RDF g_'+specieA+'_'+specieB+'(R)')
-                    plt.show()
-            except :
-                raise ValueError('showPlot should be a True/False boolean.')
-        return g_AB
-
-
-    def calculate_reduced_partial_RDF(self,structure,specieA,specieB,**kwargs) :
-        """
-        Calculate pairwise partial reduced radial distribution function G_AB(r)
-
-        Reduced partial RDF function G_AB(r) is obtained from parial RDF
-        g_AB(r) using the expression :
-            G_AB(r) = 4*pi*rho_0*r*(g_AB(r)-1)
-        with rho_0 the atomic density (??? UNIT ???)
-
-        args :
-            - structure : object of pymatgen.core.structure Structure class
-            - speciesA : first species name as a string (eg. 'Al', 'N', etc.)
-            - speciesB : second species name as a string (eg. 'Al', 'N', etc.)
-
-        Optional arguments :
-            - sigma : Gaussian smearing factor (standard deviation)
-            - R : R array (should be ordered with constant step)
-            - Rmax : cutoff radius for neighbor search and maximum value of array of R values (starting at 0)
-            - Rsteps : number of bins for R discretization
-            - showPlots : (default = False)
-
-        returns :
-            G_AB(R),R where G_AB(R) is the partial RDF between (A,B) species
-            calculated for the vector of radial distances R.
-        """
-        # TODO : retrieve system density in the appropriate unit
-        rho_0 = structure.num_sites/structure.volume  # Number of atoms/Angstrom^3
-        g_AB = self.calculate_partial_RDF(structure,specieA,specieB,**kwargs)
-        G_AB = 4*np.pi*rho_0*self.R*(g_AB-1)
-        return G_AB
-
-    def calculate_fingerprint_AB_component(self,structure,specieA,specieB,**kwargs) :
-        """
-        Calculate pairwise fingerprint function as defined in Oganov A.R. and Valle M. J. Chem. Phys. 130(10), 2009
-
-        For a definition see equation (3) in :
-        Oganov, Artem R., et Mario Valle. « How to Quantify Energy Landscapes
-        of Solids ». The Journal of Chemical Physics 130, nᵒ 10 (14 mars 2009):
-        104504. https://doi.org/10.1063/1.3079326.
-
-        F_AB = g_AB -1
-        where g_AB is the partial radial distribution function (RDF)
-
-        args :
-            - structure : object of pymatgen.core.structure Structure class
-            - speciesA : first species name as a string (eg. 'Al', 'N', etc.)
-            - speciesB : second species name as a string (eg. 'Al', 'N', etc.)
-            - sigma : Gaussian smearing factor (standard deviation)
-            - Rmax : cutoff radius for neighbor search and maximum value of array of R values (starting at 0)
-            - Rsteps : number of bins for R discretization
-
-        Optional arguments :
-            - showPlots : (default = False)
-            - R : R array (should be ordered with constant step)
-        returns :
-            F_AB(R),R where F_AB(R) is the (A,B) element of the fingerprint matrix
-        """
-
-        showPlot = False
-        if 'showPlot' in kwargs :
-            try :
-                if kwargs['showPlot'] == True :
-                    showPlot = True
-                    # Setting kwargs['showPlot'] to false to avoid plotting g_AB
-                    kwargs['showPlot'] = False
-
-            except :
-                raise ValueError('showPlot should be a True/False boolean.')
-
-        if self.fingerprintMethod == 'OganovValle2009' :
-            F_AB = self.calculate_partial_RDF(structure,specieA,specieB,**kwargs) - 1.0
-
-        # TODO : insert other types of fingerprint calcuations here
-        # elif self.fingerprintMethod == 'MEHODNAME' :
-        # CALCULATE F_AB
-
-        if showPlot == True :
+        if show_plot:
+            shift = 0.0
+            legend=[]
             fig, ax = plt.subplots()
-            ax.plot(self.R,F_AB)
-            ax.set(xlabel='R (Angstroms)',
-                    ylabel='F_'+specieA+'_'+specieB+'(R)',
-                    title ='Fingerprint F_'+specieA+'_'+specieB+'(R) based on '+self.fingerprintMethod)
-            plt.show()
 
-        return F_AB
+            for A_index, A_type in enumerate(species):
+                for B_index, B_type in enumerate(species):
+                    if B_index > A_index:
+                        continue
+                    partial_1 = descriptor[0][vo.get_location((A_type, B_type))]
+                    partial_2 = descriptor[1][vo.get_location((A_type, B_type))]
+                    
+                    ax.plot(self.R, partial_1 + shift, color='blue', 
+                            label=f"System 1 {A_type}-{B_type}")
+                    ax.plot(self.R, partial_2 + shift, color='red', 
+                            label=f"System 2 {A_type}-{B_type}")
+                    ax.plot(self.R, partial_2 - partial_1 + shift, color="black", 
+                            label=f"{A_type}-{B_type} difference")
+                    shift += 10.0
 
-
-    def calculate_cosine_distance(self,structure1,structure2, systemName:int='',
-                                  showPlot=False, **kwargs):
-        """
-        Calculate "distance" between two structures (i.e. 1-similarity) of
-        identical compositions
-
-        If self.distanceMethod = 'cosine', the method uses the cosine distance
-        matrix as defined in Oganov, A.R., and Valle M., J. Chem. Phys. 2009,
-        130 (10), 104504. (https://doi.org/10.1063/1.3079326).
-
-        Implementation using calculate_all_partial_RDFs(), based on pymatgen
-        get_all_neighbors() method. This is more efficient than using
-        calculate_partial_RDF() separately on all pairs of atoms.
-
-        Args :
-            - structure1 : pymatgen.core.structure Structure object
-            - structure2 : pymatgen.core.structure Structure object
-            - showPlot: bool (default is False)
-
-        Returns:
-            float: distance between 0 (identical structures) and 1 (infinitely-
-            different structures.
-        """
-
-        # TODO: extend the use of the method to systems having identical atom types
-        # with different proportions (use set()
-        # Get compositions using symple elements (e.g. 'Al') as opposed to species (e.g. 'Al3+')
-        """
-        compo1 = structure1.composition.remove_charges()
-        compo2 = structure2.composition.remove_charges()
-        if not compo1.reduced_formula == compo2.reduced_formula :
-            print('Two structures used in calculate_cosine_distance have different reduced compositions. Distance set to 1')
-            return 1.0
-        """
-
-        (partials_1, types_1) = self.calculate_all_partial_RDFs(structure1)
-        (partials_2, types_2) = self.calculate_all_partial_RDFs(structure2)
-        # structures have previously been ordered
-        if types_1 != types_2:
-            print('Two structures used in calculate_cosine_distance have different'
-                  'compositions. Distance set to 1')
-            return 1.0
-
-        if self.print_performance:
-            tic = perf_counter()
-        listOfAtomTypes = types_1
-        nbOfAtomTypes = len(listOfAtomTypes)
-        compo1 = structure1.composition.remove_charges()
-        compo2 = structure2.composition.remove_charges()
-
-        if self.distanceMethod == 'cosine' :
-            # Calculate fingerprint component weights (must be the same for both structures)
-            w_AB = np.zeros((nbOfAtomTypes,nbOfAtomTypes))
-            sumOfNANB = 0
-            for AIndex,AatomType in enumerate(listOfAtomTypes):
-                for BIndex,BatomType in enumerate(listOfAtomTypes[:AIndex+1]) :
-                    w_AB[AIndex][BIndex] = compo1[AatomType]*compo1[BatomType]
-                    if AIndex != BIndex:
-                        w_AB[BIndex][AIndex] = w_AB[AIndex][BIndex]
-                    sumOfNANB += compo1[AatomType]*compo1[BatomType]
-            w_AB /= sumOfNANB
-
-            # This may use a lof of memory. NOt sure it needs to be stored.
-            term1 = 0.0
-            term2 = 0.0
-            term3 = 0.0
-            # F1 = np.zeros((nbOfAtomTypes,nbOfAtomTypes,len(R)))
-            # F2 = np.zeros((nbOfAtomTypes,nbOfAtomTypes,len(R)))
-
-            if showPlot == True :
-                shift = 0.0
-                legend=[]
-                fig, ax = plt.subplots()
-
-            for AIndex,AatomType in enumerate(listOfAtomTypes) :
-                for BatomType in listOfAtomTypes[:AIndex+1]:
-                    BIndex = listOfAtomTypes.index(BatomType)
-                    F1_AB = partials_1[AIndex, BIndex, :] - 1.0
-                    F2_AB = partials_2[AIndex, BIndex, :] - 1.0
-
-                    if showPlot == True :
-                        ax.plot(self.R,F1_AB+shift)
-                        legend.append('F1_'+AatomType+'_'+BatomType)
-                        ax.plot(self.R,F2_AB+shift)
-                        legend.append('F2_'+AatomType+'_'+BatomType)
-                        shift += 10.0
-
-                    if BIndex == AIndex :
-                        term1 += np.sum(F1_AB*F2_AB*w_AB[AIndex][BIndex])
-                        term2 += np.sum(np.square(F1_AB)*w_AB[AIndex][BIndex])
-                        term3 += np.sum(np.square(F2_AB)*w_AB[AIndex][BIndex])
-                    elif BIndex < AIndex:
-                        term1 += 2*np.sum(F1_AB*F2_AB*w_AB[AIndex][BIndex])
-                        term2 += 2*np.sum(np.square(F1_AB)*w_AB[AIndex][BIndex])
-                        term3 += 2*np.sum(np.square(F2_AB)*w_AB[AIndex][BIndex])
-            distance = 0.5*(1-term1/(np.sqrt(term2)*np.sqrt(term3)))
-
-        if self.print_performance:
-            print(('Calculation of distance between structures took {:.1f} ms'
-                   ).format(1000 * (perf_counter() - tic)))
-
-        # TODO : insert here other definitions of distances between structures
-        # elif self.distanceMethod == 'DISTANCE_METHOD_NAME'
-            # ENTER DISTANCE CALCULATION HERE
-
-        if showPlot == True :
-            ax.set(xlabel='R (Angstroms)', ylabel='Intensity')
-            title = 'distance = '+str(distance)+' ; fingerprint components'
-            if systemName != '' :
-                title=systemName+' : '+title
+            ax.set(xlabel='r (A)', ylabel='Intensity')
+            title = f"distance {cosine_distance:.3f}; partial PDFs"
+            if system_names:
+                title = ' vs '.join(system_names) + ': ' + title
             ax.set_title(title)
-            ax.legend(legend)
+            ax.legend()
             plt.show()
+            
+            return cosine_distance, fig, ax
 
-        return distance
+        else:
+            return cosine_distance
 
-    def set_stucture_ids(self, structures,structureIDs=[]):
+    def set_stucture_ids(self, structures, structureIDs=[]):
         """
-        TO BE COMPLETED
+        Set structureIDs property based on a list of atomic systems
+
+        Each system may be ASE Atoms or Pymatgen Structure
+
+        Args:
+            structures: list or tuple
+                List of systems used to set associated structureIDs
+            structureIDs: list ot tuple
+                If not set, IDs will correspond to structure indexes in
+                structures argument.
+
         """
-        if len(structureIDs) == 0:
+        if not structureIDs or not(len(structureIDs)):
             try :
                 if len(self.IDs) != len(structures):
                     # Setting default structure IDs between 1 and N where N
@@ -606,145 +332,45 @@ class distanceMatrixData() :
         else:
             self.IDs = structureIDs
 
-
-    def calculate_distance_matrix(self,structures,structureIDs=[],
-                                  systemName:str='',
-                                  show_plot=False, **kwargs) :
+    def calculate_distance_matrix(self, structures, species=None, structureIDs=[], 
+                                  n_jobs=None, return_plot=True, show_plot=False, 
+                                  figure_title=None, **vo_kwargs):
         """
-        Calculate a matrix of distances among a list of structures
-
-        In default class settings the method uses cosine distances (between 0 and 1) between structure fingerprints as defined in Oganov A.R. and Valle M. J. Chem. Phys. 2009, 130(10), 104504 (https://doi.org/10.1063/1.3079326.), equations (3), (6b) and (7).
-        Other implementations may be inserted in the future.
-
-        Args :
-        - structures : list of pymatgen.core.structure Structure objects.
-        - structureIDs : list or array of IDs associated with the different
-          structures. May by used to connect them to a database or
-          uspexStructuresData objects.
-        - systemName : str, OPTIONAL
-            Will add systemName+' : ' at beginning of title if different from ''
-        - show_plot : bool, OPTIONAL
-
-
-        Optional keyword arguments :
-        - saveToFile : (default = False) = True : saving matrix and associated data to file self.distMatrixDataSaveFile
-        - saveFileName : saving matrix and associated data to file saveFileName
-
-        Returns :
-            - fig, ax if show_plot
-            - self with distance matrix stored as self.distMatrix and structure IDs as self.IDs
-        """
-
-        self.set_stucture_ids(structures=structures, structureIDs=structureIDs)
-
-        self.Dmatrix = np.zeros((len(self.IDs),len(self.IDs)))
-        for index1,ID1 in enumerate(self.IDs) :
-            for index2,ID2 in enumerate(self.IDs) :
-                if ID2 == ID1 :
-                    self.Dmatrix[index1][index2] = 0
-                elif ID2 < ID1 :
-                    self.Dmatrix[index1][index2] = self.calculate_cosine_distance(
-                        structures[index1],structures[index2],systemName=systemName)
-                    self.Dmatrix[index2][index1] = self.Dmatrix[index1][index2]
-
-        if 'saveFileName' in kwargs :
-            saveFileName = kwargs['saveFileName']
-        else :
-            saveFileName = self.saveFileName
-
-        if 'saveToFile' in kwargs :
-            if kwargs['saveToFile'] == True :
-                try :
-                    with open(saveFileName, 'wb') as f:
-                        pickle.dump(self, f)
-                    self.saveFileName = saveFileName
-                except :
-                    raise ValueError
-
-        if show_plot:
-            fig, ax = self.plot_distance_matrix(systemName=systemName)
-            return fig, ax
-
-    # End of method calculate_distance_matrix
-
-    def plot_distance_matrix_old(self,systemName:str='',tickLabels:list=[],
-                                 axesLabel:str='',tickLabelsFontSize:int=0,
-                                 xticklabelsRotation=45, cmap=None) :
-        """
-        Plot distance matrix (OLD METHOD, DEPRECATED)
+        Calculate cosine distance (between 0 and 1) matrix for a list of structures
+        
+        Calculation is based on the Valle Oganov (2009) distance descriptors
+        as implemented in Dscribe.
 
         Args:
-            systemName: str, OPTIONAL
-                If specified, will insert systemName+' : ' before title
-            tickLabels: list, OPTIONAL
-                default is [] in wich case structure IDs (if any) or structure
-                indexes will be used.
-            axesLabel: str, OPTIONAL
-                Default is ''.
-            tickLabelsFontSize: int, OPTIONAL
-                will change font size of tick labels (e.g. set to 6 or less if
-                matrix size is equal to 50).
-            xticklabelsRotation: float or {'horizontal','vertical'}, OPTIONAL
-                Based on matplotlib.text.Text rotation option. Default is 45.
-            cmap: str, matplotlib.colors.LinearSegmentedColormap or None
-                if None a red-gold-green map will be used. If 'default' the default
-                matplotlib cmap (blue-green-yellow) will be used.
-
-        Returns:
-            fig : figure.Figure
-                distance matrix figure handle
+            structures: List of Structure
+                 
+            structureIDs: Description
         """
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        title = 'Cosine distance matrix between structures'
-        if systemName != '' :
-            title=systemName+': '+title
-
-
-        if cmap is None:
-            colors = [(1, 0, 0), (1, 0.9, 0), (0, 0.75, 0)]  # Red, Gold, Green
-            cmap = LinearSegmentedColormap.from_list('RedGoldGreen', colors)
-        elif cmap == 'default':
-            cmap = None
-
-        im = ax.imshow(self.Dmatrix, cmap=cmap)
-        ax.set_aspect('equal')
-        ax.set_title(title)
-        if len(tickLabels) == 0 or len(tickLabels) != len(self.IDs):
-            if len(self.descriptions) == len(self.IDs):
-                tickLabels = self.descriptions
-                if len(axesLabel) == 0:
-                    axesLabel = 'Structure descriptions'
-            else :
-                tickLabels = [str(ID) for ID in self.IDs]
-                if len(axesLabel) == 0:
-                    axesLabel = 'Structure ID'
-
-        ax.set_xlabel(axesLabel)
-        ax.set_ylabel(axesLabel)
-        ax.set_xticks(0.5+np.arange(len(self.IDs)))
-        ax.set_xticklabels(tickLabels,rotation=xticklabelsRotation,va='top',ha='right')
-        ax.set_yticks(0.5+np.arange(len(self.IDs)))
-        ax.set_yticklabels(tickLabels,va='bottom',ha='right')
-        if tickLabelsFontSize > 0 :
-            for item in (ax.get_xticklabels() + ax.get_yticklabels()):
-                item.set_fontsize(tickLabelsFontSize)
-        plt.colorbar(im, ax=ax, orientation='vertical',label='D_cosine')
-
-        return fig, ax
-
-    # End of classmethod plot_distance_matrix
-
-
-    def plot_distance_matrix(self,systemName:str='',tickLabels:list=[],
+        # Adapt to accept list of ASE Atoms or Pymatgen Structure instances
+        self.set_stucture_ids(structures=structures, structureIDs=structureIDs)
+        self.Dmatrix = get_distance_matrix_from_valle_oganov_dscribe(
+            structures, species, function="distance", sigma=self.sigma, 
+            n=len(self.R), r_cut=self.Rmax, n_jobs=n_jobs, 
+            return_plot=False, show_plot=False)
+        
+        if return_plot:
+            print('Dmatrix property has been updated.')
+            fig, ax = self.plot_distance_matrix(figure_title=figure_title)
+            if show_plot:
+                fig.show()
+            return self.Dmatrix, fig, ax
+        else:
+            return self.Dmatrix
+    
+    def plot_distance_matrix(self,figure_title:str='',tickLabels:list=[],
                              axesLabel:str='',tickLabelsFontSize:int=0,
                              xticklabelsRotation=45, cmap=None) :
         """
         Plot distance matrix
 
         Args:
-            systemName: str, OPTIONAL
-                If specified, will insert systemName+' : ' before title
+            figure_title: str, OPTIONAL
+                If specified, will insert figure_title+' : ' before title
             tickLabels: list, OPTIONAL
                 default is [] in wich case structure IDs (if any) or structure
                 indexes will be used.
@@ -764,9 +390,8 @@ class distanceMatrixData() :
                 distance matrix figure handle
             ax :  axes handle
         """
-        title = 'Distance matrix between structures'
-        if systemName != '' :
-            title = systemName + ': ' + title
+        if not figure_title:
+            title = 'Distance matrix between structures'
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -783,7 +408,7 @@ class distanceMatrixData() :
                     axesLabel = 'Structure ID'
 
         fig, ax =  plot_distance_matrix(distance_matrix=self.Dmatrix,
-            structure_names=tickLabels, system_name=systemName,
+            structure_names=tickLabels, system_name=figure_title,
             axesLabel=axesLabel, tickLabelsFontSize=tickLabelsFontSize,
             xticklabelsRotation=xticklabelsRotation, cmap=cmap)
 
@@ -870,14 +495,371 @@ class distanceMatrixData() :
         print('distanceMatrixData saved in file : ',saveFileName)
 
 
+    def select_distant_structures(self, structures, n_structures, initial_selection=None,
+                                  distance_threshold=0.01, distance_method='max_min', 
+                                  structure_ids=None, 
+                                  structure_descriptions=None, 
+                                  sorting_property_values=None, sorting_property_weight=0., 
+                                  sorting_order='ascending', 
+                                  sorting_property_label='property', 
+                                  n_jobs=None, seed=None, 
+                                  mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7, 
+                                  mds_plot_fixed_size=10, description=None):
+        """
+        Select distant structures, possibly with a penalty associated with a property
+        
+        The method used [0, 1] cosine distances as described by Valle and Oganov, and 
+        as implemented in the Dscribe library. Distances can be maximied with a 
+        maxmin (each structure as facr as possible to the closest already-selected) or 
+        maxmean (maximum avearage distance to all already-selected structures) algorithm, 
+        and can be balanced with sorting_property_values associated with each structure 
+        that should either be minimized ('ascending' sorting_order) or maximized ('descending' 
+        sorting_order), using a sorting_property_weight w_p.
+
+        Args:
+            structures: list or tuple
+                List of structures, ideally in ASE Atoms format. Pymatgen structures
+                or file names are accepted and will be automatically converted to 
+                ASE Atoms (which can be a bit long for a large number of structures)
+            n_structures: int
+                Number of structures to select.
+            initial_selection: list, str or None (default is None)
+                List of preselected structure IDs or pre-selection mode, 
+                including:
+                    * 'good_structures': the best 10 structures in goodPOSCARS
+                    * 'best_structure': the best structure (according to fitness)
+                    * 'lowest_energy': the lowest_energy structure
+                If None, the first structure is chosen randomly.
+            distance_thresded hold: float (default is 0.01)
+                Minimum allowed distance between the considered structure and already-selected structures.
+                Structures discared based on thsi criterion will be identified as "discarded" in the 
+                MDS plot (shown if show_plot is True).
+            distance_method: str (default is 'max_min')
+                Choose method between 'max_average' (maximize global distance to all others at each step) 
+                or "max_min" (maximize distance to closest strutcure at each step).
+            structure_ids: list, tuple or None (default is None)
+                IDs associated with the provided structures (should be have the same length)
+                If None, (zero-based) indexes will be used as IDs.
+            structure_descriptions: list, tuple or None (default is None)
+                List of str corresponding to descriptions of the provided structures.
+                If None, descriptions will be set using the structure IDs and compositions.  
+            sorting_property_values: list, tuple or array (default is None)
+                Values that will be used in combination with distances to select the structures.
+                Should be used with sorting_property_weight > 0 (see definition below). 
+                If None, distances between structures will be the only considered criterion. 
+            sorting_order: str (default is 'ascending')
+                Whether sorting_property_values should be sorted in ascending (as typically the case 
+                for energies) or descending order (see sorting_property_weight definition)
+            sorting_property_label: str (default is 'property')
+                Name of the property balancing distances. Eg. "energy_per_atom", "bulk_modulus", etc...
+            sorting_property_weight: float (default is 0.)
+                Weight (w_p) associated with the property (p) balancing the distances between structures, 
+                between 0 (no penalty, the default, in which case only distances matter) to 1 in 
+                which case distance will not even matter and the property dominates entirely.
+                Depending on sorting_order, the term that one tries to maximize may be :
+                    'ascending': (1 - w_p) * (dist_average) + w_p * (1 - ((p - p_min) / (p_max-p_min))
+                    'descending': (1 - w_p) * (dist_average) + w_p * (p - p_min) / (p_max-p_min)
+                Typical case is when the property is the structure energy. In this case sorting_order
+                should be 'ascending' and w_p values closer to 1 will favor stable structures.
+            n_jobs: int (default is 1)
+                Number of processors used to (re)calculate the full distance matrix.
+            mds_plot_sizeref: float (default is 0.01)
+                Marker size (diameter) factor reflecting relative energies in the MDS plot. 
+            mds_plot_sizemin: int (default is 3)
+                Minimum marker size (diameter) reflecting relative energies in the MDS plot.
+            mds_plot_opacity: float (default is 0.7)
+                Marker opacity in MDS plot.
+            mds_plot_fixed_size: int (default is 10)
+                Marker diameter in the plots when sorting_property_values are not provided.
+            description: str or None (default is None)
+                description of the considered set, used in the MDS plot title.
+
+        Returns:
+            results: dict
+                dictionary containing information in the selected structures
+            mds_plot_fig: plotly figure object
+                Figure associated with the MDS plot.
+        """
+        if not n_jobs:
+            n_jobs = cpu_count()
+
+        # Convert structures to a list of ASE Atoms if this is not already the case.
+        atoms_list = [get_ase_atoms(s) for s in structures]
+
+        # TODO: first check whether matrix exists         
+        self.calculate_distance_matrix(atoms_list, n_jobs=n_jobs)
+
+        if structure_ids is None:
+            structure_ids = list(range(len(atoms_list)))
+        elif len(structure_ids) != len(atoms_list):
+            raise(ValueError("structure_ids and structures should have the same length."))
+
+        if structure_descriptions is None:
+            structure_descriptions = [(f"{len(atoms)}-atom {atoms.get_chemical_formula()} structure "
+                                      f"with ID {id}") for id, atoms in zip(structure_ids, atoms_list)] 
+        elif len(structure_descriptions) != len(atoms_list):
+            raise(ValueError("structure_descriptions and structures should have the same length."))
+
+        # Initialize results dict
+        results = {
+            'sorting_property_weight': sorting_property_weight, 
+        }
+
+        if sorting_property_values is not None:
+            if sorting_order.lower() in ['ascending', 'asc']:
+                sorted_indexes = np.argsort(sorting_property_values)
+            elif sorting_order.lower() in ['descending', 'desc']:
+                sorted_indexes = np.argsort(-np.array(sorting_property_values))
+            structure_indexes_by_sorting_property = np.argsort(sorted_indexes)
+    
+        struct_indexes = np.arange(len(atoms_list))
+    
+        # Process initial_selection:
+        if isinstance(initial_selection, (list, tuple, np.ndarray)):
+            selected_indexes = initial_selection
+        elif isinstance(initial_selection, int):
+            selected_indexes = [initial_selection]
+        elif sorting_property_values and isinstance(
+                initial_selection, str) and initial_selection.lower() == 'best':
+            selected_indexes = sorted_indexes[:1]
+        elif not initial_selection or (isinstance(initial_selection, str) 
+                                       and initial_selection.lower() == 'random'):
+            # Initialize sequence, save seed in results
+            ssq = np.random.SeedSequence(seed)
+            rng = np.random.default_rng(ssq)
+            seed = ssq.entropy
+            print('Random number generation:\nSeed = {}'.format(seed))
+            # Make sure seed is returned
+            results['seed'] = seed
+            # Randomly pick one ID
+            selected_indexes = [rng.choice(struct_indexes)]
+        else:
+            raise TypeError(f"initial_selection of type {type(initial_selection)} rather than "
+                            f"allowed list, tuple, numpy ndarray, int or str types.")
+
+        if distance_method in ['maximum_average', 'max_average', 'max_av']:
+            dist_mthd_str = 'maximum average distance to all picked structures'
+        elif distance_method in ['maximum_minimum', 'maxmin', 'max_min']:
+            dist_mthd_str = 'maximum distance to closest picked structure'
+        else:
+            ValueError(f'{distance_method} not among allowed values (e.g. max_av)')
+
+        if sorting_property_weight >= 0 and sorting_property_weight <= 1:
+            w_p = sorting_property_weight
+        else:
+            raise ValueError(f"sorting_property_weight should be between 0 and 1.")
+
+        # Make sure that selected IDs exist in self.IDs
+        for index in selected_indexes:
+                if index not in struct_indexes: 
+                    raise ValueError(f"Selected index {index} is out of [0-{len(struct_indexes)}] range.")
+
+        # Initialize lists in results based on selected indexes
+        results['structure_indexes'] = list(selected_indexes)
+        results["structure_ids"] = [structure_ids[i] for i in selected_indexes]
+        results["structure_descriptions"] = [structure_descriptions[i] for i in selected_indexes]
+        results['distance_contributions'] = [None] * len(selected_indexes)
+        
+        if sorting_property_values is not None:
+            results[f"structure_indexes_by_{sorting_property_label}"
+                    ] = structure_indexes_by_sorting_property[selected_indexes].tolist()
+            sorting_property_values_ar = np.array(sorting_property_values, dtype="float")
+            results[f'{sorting_property_label}_contributions'] = [None] * len(selected_indexes)
+        else:
+            sorting_property_values_ar = np.zeros(len(selected_indexes))
+        
+        def normalize(myarray):
+            min_ar = np.min(myarray)
+            max_ar = np.max(myarray)
+            normalized_array = (myarray - min_ar) / (max_ar - min_ar)
+            return normalized_array
+
+        # Create sets of all, selected and remaining indexes
+        all_indexes = set(struct_indexes)
+        selected_indexes = set(selected_indexes)
+        remaining_indexes = all_indexes - selected_indexes
+        discarded_indexes = set()
+        while 1:
+            if len(selected_indexes) >= n_structures:
+                self.print(f"The target number of selected structures ({len(selected_indexes)} out "
+                           f"of {n_structures}) has been reached. exiting.")
+                break
+            
+            if not len(remaining_indexes):
+                self.print(f"Theere are no remaining structure. Exiting while loop with only "
+                           f"{len(selected_indexes)} structures selected.")
+
+            # Convert sets to arrays
+            remaining_indexes_ar = np.array(list(remaining_indexes), dtype=int)
+            selected_indexes_ar = np.array(list(selected_indexes), dtype=int)
+
+            # Compute average (or min) distance to already-selected structures
+            D = np.take(np.take(self.Dmatrix, remaining_indexes_ar, axis=0), 
+                        selected_indexes_ar, axis=1)
+            if distance_method in ['maximum_average', 'max_average', 'max_av']:
+                dist_contrib = np.mean(D, axis=1)
+            elif distance_method in ['maximum_minimum', 'maxmin', 'max_min']:
+                dist_contrib = np.min(D, axis=1)
+            else:
+                ValueError(f'{distance_method} not among allowed values.')
+            # Normalize over remaining structures
+            dist_contrib = normalize(dist_contrib)
+            
+            # Calculate a fitness penalty normlized over remaining data
+            prop_contrib = normalize(sorting_property_values_ar[remaining_indexes_ar])
+            
+            # Invert the contribution of the property depending on whether it should be
+            # beneficial or detrimental
+            if sorting_order.lower() in ['ascending', 'asc']:
+                prop_contrib = 1 - prop_contrib
+
+            # Find index maximizing average distance - fitness contribution
+            # Term to maximize -> high w_p should favor low-fitness/energy structures
+            best_index_in_remaining = np.argmax((1 - w_p) * dist_contrib + w_p * prop_contrib)
+            best_index = remaining_indexes_ar[best_index_in_remaining]
+            best_id = structure_ids[best_index]
+            
+            # Automatically discard a structure that would be identical to an already-selected 
+            # structure within a given distance threshold.
+            continue_while_loop = False
+            for i in selected_indexes:
+                d = self.Dmatrix[best_index, i]
+                if d < distance_threshold:
+                    self.print((f"The distance {d:.5f} between current best structure with index {best_index} "
+                                f"and ID {best_id} and already-selected structure with index {i} and"
+                                f"ID {id} is smaller than the threshlod distance {distance_threshold}. "
+                                f"It will not be selected."), verb_th=1)
+                    continue_while_loop = True
+                    break
+            
+            if continue_while_loop:
+                discarded_indexes.add(best_index)
+                remaining_indexes.remove(best_index)
+                continue
+                
+            results['structure_indexes'].append(best_index)
+            results['structure_ids'].append(best_id)
+            results["structure_descriptions"].append(structure_descriptions[best_index])
+            results['distance_contributions'].append(dist_contrib[best_index_in_remaining]) 
+
+            if sorting_property_values is not None:
+                index_by_sorting_property = structure_indexes_by_sorting_property[best_index]
+                results[f'structure_indexes_by_{sorting_property_label}'].append(index_by_sorting_property)
+                results[f'{sorting_property_label}_contributions'].append(prop_contrib[best_index_in_remaining])
+                self.print(f"Structure index {best_index} with ID {best_id}, ranked {index_by_sorting_property} "
+                           f"by ({sorting_order}) {sorting_property_label} (with a {dist_mthd_str} of "
+                           f"{dist_contrib[best_index_in_remaining]:.3f} and a normalized {sorting_property_label} "
+                           f"contribution of {prop_contrib[best_index_in_remaining]:.3f}", 
+                           verb_th=2)
+            else:
+                self.print(f"Structure index {best_index} with ID {best_id} with a {dist_mthd_str} of "
+                           f"{dist_contrib[best_index_in_remaining]:.3f}", 
+                           verb_th=2)
+            
+            selected_indexes.add(best_index)
+            remaining_indexes.remove(best_index)
+
+        # Compute average (or min) distance to all selected structures
+        selected_indexes_ar = np.array(list(selected_indexes), dtype=int)
+        D = np.take(np.take(self.Dmatrix, selected_indexes_ar, axis=0), 
+                    selected_indexes_ar, axis=1)
+        if distance_method.lower() in ['maximum_average', 'max_average', 'max_av']:
+            dist_str = 'average_dist_to_other_selected'
+            results[dist_str] = [np.mean(np.delete(D[i], i)) for i in range(D.shape[0])]
+        elif distance_method.lower() in ['maximum_minimum', 'maxmin', 'max_min', 'max-min']:
+            dist_str = 'average_dist_to_other_selected'
+            results[dist_str] = [np.mean(np.delete(D[i], i)) for i in range(D.shape[0])]
+
+        self.print(f"results = {results}", verb_th=2)
+        results_df = DataFrame(results)
+        self.print(f"distance-based structure selection is done:\n{results_df}", verb_th=1)
+
+        # Compute MDS
+        self.print("Computing multi-dimensional scaling (MDS)...")
+        mds = MDS(n_components=2, dissimilarity='precomputed', 
+                  metric=True, n_jobs=n_jobs)
+        coords = mds.fit_transform(self.Dmatrix)
+
+        structure_selection_statuses = []
+        for i in range(len(atoms_list)):
+            if i in selected_indexes:
+                structure_selection_statuses.append('selected')
+            elif i in discarded_indexes:
+                structure_selection_statuses.append('discarded')
+            else:
+                structure_selection_statuses.append('unselected')
+
+        # TODO: adapt in case no sorting property is specified
+        # Create a DataFrame for Plotly
+        df = DataFrame({
+            'x': coords[:, 0],
+            'y': coords[:, 1],
+            'ID': structure_ids, 
+            'description': structure_descriptions, 
+            'is_selected': structure_selection_statuses
+        })
+
+        if not description:
+            description_str = ""
+        else:
+            description_str += ""
+        size_non_zero_add = 1e-6
+        if sorting_property_values is not None:
+            df[sorting_property_label] = sorting_property_values
+            df[f"normalized_{sorting_property_label}"] = normalize(sorting_property_values) + size_non_zero_add
+            df[f'index_by_{sorting_property_label}'] = structure_indexes_by_sorting_property
+            size = f"normalized_{sorting_property_label}"
+            title = (f"{description_str}MDS plot for {len(selected_indexes)} structures "
+                     f"selected based on {dist_mthd_str}<br>"
+                     f"with a {sorting_property_label} weight of {sorting_property_weight}.")
+            hover_data = ['ID', 'description', sorting_property_label, 
+                          f'index_by_{sorting_property_label}']
+            marker_dict = dict(sizemode='diameter', sizeref=mds_plot_sizeref, 
+                               sizemin=mds_plot_sizemin, opacity=mds_plot_opacity)
+        else:
+            size = None
+            title = (f"{description_str}MDS plot for {len(selected_indexes)} structures "
+                     f"selected based on {dist_mthd_str}<br>")
+            hover_data = ['ID', 'description']
+            marker_dict = dict(sizemode='diameter', size=mds_plot_fixed_size, 
+                               opacity=mds_plot_opacity)
+
+        # Plot with Plotly Express
+        mds_plot_fig = px.scatter(
+            df,
+            x='x',
+            y='y', 
+            size=size,  # Control size by property
+            color='is_selected',  # Color by selection status
+            symbol='is_selected',  # Symbol by selection status
+            title=title, 
+            labels={'x': 'MDS Dimension 1', 'y': 'MDS Dimension 2'}, 
+            hover_data=hover_data,  
+            template='simple_white' 
+        )
+
+        # Customize symbol size range if needed
+        mds_plot_fig.update_traces(
+            marker=marker_dict,
+            selector=dict(mode='markers')
+        )
+        
+        self.print("Opening plotly (via browser)...")
+        mds_plot_fig.show()
+
+        df.to_csv('tmp.csv')
+
+        return results, mds_plot_fig
+
 # end of class distanceMatrixData
 
 
 def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None, 
                                                  function="distance",
                                                  sigma=0.1, n=100, r_cut=8.0, 
-                                                 n_jobs=1, sparse=False, dtype="float32", 
-                                                 distance_metric='cosine', show_plot=False,
+                                                 n_jobs=None, sparse=False, dtype="float32", 
+                                                 distance_metric='cosine', return_plot=False, 
+                                                 show_plot=False, 
                                                  structure_names=None, axesLabel:str='',
                                                  tickLabelsFontSize:int=0,
                                                  xticklabelsRotation=45, cmap=None,
@@ -906,15 +888,17 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
             Number of discretization points
         r_cut: float( default is 8.0)
             cutoff radius in Å.
-        n_jobs: int: (default is 1)
+        n_jobs: int: (default is None)
             number of processors used for the calculation of the distance matrix
+            If None the number of processors will be obtained using the multiprocess module.
         distance_metric: str (default is 'cosine')
             Metric for the distance measurement. Default is a 0-1 cosine measurement.
             (see scipy pdist for other possibilities).
-        sparse: bool (defalut is False)
-            Whether result should be returned as a numpy sparse matrix.
-        dtype: str (default is "float64")
-            Numpy dtype of output distance matrix
+        return_plot: bool (default is False)
+            Whether figure abd axes should be returned in addition to the distance matrix 
+        show_plot: bool (default is False)
+            Whether plot shall be shown automatically.
+            If not it can be shown from the fig output with fig.show() 
         tickLabels: list, OPTIONAL
             default is [] in wich case structure IDs (if any) or structure
             indexes will be used.
@@ -942,19 +926,22 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
     # Get a list of atoms and a list of pymatgen structures
     atoms_list = [get_ase_atoms(s) for s in structures]  
     
+    if not n_jobs:
+        n_jobs= cpu_count()
+
     # Define species
     if not species:
         species = list(set.intersection(*[set(atoms.get_chemical_symbols()) for atoms in atoms_list]))
         species.sort()
-        
+    
     vo = ValleOganov(species=species, function=function, sigma=sigma, 
                     n=n, r_cut=r_cut, **vo_kwargs)
 
     if verbosity >= 2:
         tic = perf_counter()
         print(f"Calculating Valle-Oganov descriptors (fingerprints) for {len(atoms_list)} "
-              f"atomic structures...")
-    
+              f"atomic structures using {n_jobs} CPUs...")
+
     # Calculate descriptors
     vo_descr_vect = vo.create(atoms_list, n_jobs=n_jobs)
     
@@ -971,7 +958,7 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
     if verbosity >= 2:
         print(f"... took {perf_counter() - tic:.3f} s.")
     
-    if show_plot:
+    if return_plot:
         pmg_structures = [get_pymatgen_structure(s) for s in structures]
         if structure_names is None:
             structure_names = ['{} # {}'.format(s.composition.reduced_formula, i)
@@ -979,6 +966,9 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
         fig, ax = plot_distance_matrix(distance_matrix, pmg_structures, structure_names,
                                        axesLabel=axesLabel, tickLabelsFontSize=tickLabelsFontSize,
                                        xticklabelsRotation=xticklabelsRotation, cmap=cmap)
+        if show_plot:
+            fig.show()
+        
         return distance_matrix, fig, ax
     else:
         return distance_matrix
@@ -1285,7 +1275,8 @@ def plot_distance_matrix(distance_matrix=None, structures=None,
 def get_partial_from_valle_oganov_dscribe(system, type_pair, species=None, 
                                           function='distance', n=100, 
                                           sigma=0.1, r_cut=8.0,  
-                                          show_plot=True, use_reduced=False, 
+                                          return_plot=False, show_plot=False, 
+                                          use_reduced=False, 
                                           description=None, **vo_kwargs):
     
     if len(type_pair) != 2:
@@ -1321,7 +1312,7 @@ def get_partial_from_valle_oganov_dscribe(system, type_pair, species=None,
         'ylabel_reduced': f"{pair_name} reduced partial RDF", 
     }
     
-    if show_plot:
+    if return_plot:
         fig = plt.figure()
         ax = fig.add_subplot(111)
         y = partial['reduced_partial'] if use_reduced else partial['partial']
@@ -1331,17 +1322,13 @@ def get_partial_from_valle_oganov_dscribe(system, type_pair, species=None,
         
         ylabel = partial['ylabel'] if use_reduced else partial['ylabel']
         ax.set(title=description, xlabel=partial['xlabel'], ylabel=ylabel)
-        
+
+        if show_plot:
+            fig.show()
+
         return partial, fig, ax
         
     else:
         return partial
-
-    
-    
-    
-    
-    
-    
-
+ 
 
