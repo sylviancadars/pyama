@@ -504,7 +504,8 @@ class distanceMatrixData(BaseDataClass) :
                                   sorting_property_label='property', 
                                   n_jobs=None, seed=None, 
                                   mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7, 
-                                  mds_plot_fixed_size=10, description=None):
+                                  mds_plot_fixed_size=10,mds_random_state=None, 
+                                  description=None):
         """
         Select distant structures, possibly with a penalty associated with a property
         
@@ -571,6 +572,9 @@ class distanceMatrixData(BaseDataClass) :
                 Marker opacity in MDS plot.
             mds_plot_fixed_size: int (default is 10)
                 Marker diameter in the plots when sorting_property_values are not provided.
+            mds_random_state: int or None
+                Interger number to ensure reproducibility of the MDS plot. If None the 
+                random state is chosen automatically.
             description: str or None (default is None)
                 description of the considered set, used in the MDS plot title.
 
@@ -600,20 +604,22 @@ class distanceMatrixData(BaseDataClass) :
         elif len(structure_descriptions) != len(atoms_list):
             raise(ValueError("structure_descriptions and structures should have the same length."))
 
-        # Initialize results dict
-        results = {
-            'sorting_property_weight': sorting_property_weight, 
-        }
-
         if sorting_property_values is not None:
             if sorting_order.lower() in ['ascending', 'asc']:
                 sorted_indexes = np.argsort(sorting_property_values)
             elif sorting_order.lower() in ['descending', 'desc']:
                 sorted_indexes = np.argsort(-np.array(sorting_property_values))
             structure_indexes_by_sorting_property = np.argsort(sorted_indexes)
-    
+        else:
+            sorting_property_weight = 0.
+
         struct_indexes = np.arange(len(atoms_list))
-    
+
+        # Initialize results dict
+        results = {
+            'sorting_property_weight': sorting_property_weight, 
+        }
+        
         # Process initial_selection:
         if isinstance(initial_selection, (list, tuple, np.ndarray)):
             selected_indexes = initial_selection
@@ -622,6 +628,9 @@ class distanceMatrixData(BaseDataClass) :
         elif sorting_property_values and isinstance(
                 initial_selection, str) and initial_selection.lower() == 'best':
             selected_indexes = sorted_indexes[:1]
+        elif sorting_property_values is None and isinstance(
+                initial_selection, str) and initial_selection.lower() == 'best':
+            raise ValueError('initial_selection \'best\' cannot work without sorting_property_values.')
         elif not initial_selection or (isinstance(initial_selection, str) 
                                        and initial_selection.lower() == 'random'):
             # Initialize sequence, save seed in results
@@ -705,13 +714,16 @@ class distanceMatrixData(BaseDataClass) :
             # Normalize over remaining structures
             dist_contrib = normalize(dist_contrib)
             
-            # Calculate a fitness penalty normlized over remaining data
-            prop_contrib = normalize(sorting_property_values_ar[remaining_indexes_ar])
-            
-            # Invert the contribution of the property depending on whether it should be
-            # beneficial or detrimental
-            if sorting_order.lower() in ['ascending', 'asc']:
-                prop_contrib = 1 - prop_contrib
+            if sorting_property_values is not None:
+                # Calculate a fitness penalty normlized over remaining data
+                prop_contrib = normalize(sorting_property_values_ar[remaining_indexes_ar])
+                
+                # Invert the contribution of the property depending on whether it should be
+                # beneficial or detrimental
+                if sorting_order.lower() in ['ascending', 'asc']:
+                    prop_contrib = 1 - prop_contrib
+            else:
+                prop_contrib = 0.
 
             # Find index maximizing average distance - fitness contribution
             # Term to maximize -> high w_p should favor low-fitness/energy structures
@@ -777,7 +789,7 @@ class distanceMatrixData(BaseDataClass) :
         # Compute MDS
         self.print("Computing multi-dimensional scaling (MDS)...")
         mds = MDS(n_components=2, dissimilarity='precomputed', 
-                  metric=True, n_jobs=n_jobs)
+                  metric=True, n_jobs=n_jobs, random_state=mds_random_state)
         coords = mds.fit_transform(self.Dmatrix)
 
         structure_selection_statuses = []
@@ -824,6 +836,9 @@ class distanceMatrixData(BaseDataClass) :
             marker_dict = dict(sizemode='diameter', size=mds_plot_fixed_size, 
                                opacity=mds_plot_opacity)
 
+        # Enforce cnostant ordering of symbol and colr sequence based on is_selected
+        category_order = ["unselected", "discarded", "selected"]
+
         # Plot with Plotly Express
         mds_plot_fig = px.scatter(
             df,
@@ -835,7 +850,8 @@ class distanceMatrixData(BaseDataClass) :
             title=title, 
             labels={'x': 'MDS Dimension 1', 'y': 'MDS Dimension 2'}, 
             hover_data=hover_data,  
-            template='simple_white' 
+            template='simple_white', 
+            category_orders={"is_selected": category_order}
         )
 
         # Customize symbol size range if needed

@@ -1528,11 +1528,16 @@ class uspexStructuresData():
                                   distance_method='max_min',  
                                   fitness_weight=0., n_jobs=None, seed=None, 
                                   mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7, 
+                                  mds_random_state=None, 
                                   energy_plot_sizeref=0.03, energy_plot_sizemin=4, energy_plot_opacity=0.4):
         """
         Select distant structures, possibly with an energy penalty to 
         favor lower-energy structures
         
+        TODO: use distanceTools.distanceMatrixData.select_distant_structures with custom 
+        initial_selection and enthalpy by atom. Make distance_matrix is stored and passed 
+        if existing.
+
         Args:
             n_structures: int
                 Number of structures to select. 
@@ -1779,7 +1784,7 @@ class uspexStructuresData():
         # Compute MDS
         self.print("Computing multi-dimensional scaling (MDS)...")
         mds = MDS(n_components=2, dissimilarity='precomputed', 
-                  metric=True, n_jobs=n_jobs)
+                  metric=True, n_jobs=n_jobs, random_state=mds_random_state)
         coords = mds.fit_transform(self.distance_matrix)
 
         relative_energies = self.enthalpies / self.numbersOfAtoms
@@ -1799,6 +1804,9 @@ class uspexStructuresData():
 
         # TODO: plot in matrix (x=y=index_by_fitness)
 
+        # Enforce cnostant ordering of symbol and colr sequence based on is_selected
+        category_order = ["Unselected", "Selected"]
+
         # Plot with Plotly Express
         mds_plot_fig = px.scatter(
             df,
@@ -1812,7 +1820,8 @@ class uspexStructuresData():
                    f"with a fitness-penalty weight of {fitness_weight}."),
             labels={'x': 'MDS Dimension 1', 'y': 'MDS Dimension 2'},
             hover_data=['ID', 'normalized_fitness', 'rank_by_fitness', 'relative_energy'], 
-            template='simple_white'
+            template='simple_white', 
+            category_orders={"is_selected": category_order}
         )
 
         # Customize symbol size range if needed
