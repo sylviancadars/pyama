@@ -25,7 +25,7 @@ from pymatgen.io.vasp.inputs import Poscar
 from ase.io import read
 import matplotlib.pyplot as plt
 import pickle
-import structureComparisonsPkg.distanceTools as dt
+from pyama.structureComparisonsPkg import distanceTools as dt
 import json
 from warnings import warn
 from pandas import DataFrame
@@ -141,10 +141,10 @@ class uspexStructuresData():
     """
     Extract and analyze structures produced by a USPEX crystal structure prediction run
     """
-    def __init__(self, fileOrDirectoryName, uspex_run_name=None, 
+    def __init__(self, fileOrDirectoryName, uspex_run_name=None,
                  selectedStructures = 'all',
                  extractedPOSCARBaseName='ID-', extractedPOSCARExtention='.vasp',
-                 r=None, sigma=0.02, r_max=8.0, r_steps=200, 
+                 r=None, sigma=0.02, r_max=8.0, r_steps=200,
                  verbosity=1):
         """
         Calss initialization
@@ -153,7 +153,7 @@ class uspexStructuresData():
             fileOrDirectoryName: 'str'
                 Path to the resultX USPEX directory or Individuals file therein
             uspex_run_name: str or None (default is None)
-                Name designating the input file. If None, the basename of the 
+                Name designating the input file. If None, the basename of the
                 folder containing the resultsX folder (and the inputs) will be used.
             selectedStructures: str (default is 'all')
                 Whether all or certain structure (e.g. 'good_structures') shall be
@@ -167,17 +167,17 @@ class uspexStructuresData():
             r: list or numpy ndarray (default is None)
                 Vector of radial distances (in Å) used to measure distances between structures.
             sigma: float (default is 0.02)
-                Gaussian broadening (in Å) used in partial radial distribution functions to 
+                Gaussian broadening (in Å) used in partial radial distribution functions to
                 measure distances between structures.
             r_max: float (default is 8.0)
-                Maximum radial distance (in Å) used in partial radial distribution functions to 
+                Maximum radial distance (in Å) used in partial radial distribution functions to
                 measure distances between structures.
             r_steps: int (default is 200)
-                Number of points in partial radial distribution functions used to 
+                Number of points in partial radial distribution functions used to
                 measure distances between structures.
             verbosity: int (default is 1)
                 verbosity level from 0 to 3 (hard-core debugging).
-                
+
         Returns:
 
         """
@@ -205,10 +205,10 @@ class uspexStructuresData():
             self.uspex_run_name = uspex_run_name
 
         self.print("Extracting POSCAR files and loading pymatgen structures.")
-        
+
         self.pmg_structures = self.get_structures_from_IDs(self.IDs, extract_poscar_files=True,
                                                            use_initial=False)
-        
+
         self.print("Loading ASE structures from extracted POSCAR files.")
         self.set_ase_atoms_list()
 
@@ -461,16 +461,16 @@ class uspexStructuresData():
 
     def set_ase_atoms_list(self, set_info=True, use_initial=False):
         """
-        Get a list of ASE Atoms objects from extracted POSCARS and store as  
-        
+        Get a list of ASE Atoms objects from extracted POSCARS and store as
+
         This function assumes that POSCAR files have already been extracted.
-        
+
         Args:
             TO BE COMPLETED
         """
         use_initial_str = " initial structure" if use_initial else ""
         self.print(f'Reading ase Atoms from extracted POSCAR{use_initial_str} files', verb_th=1)
-        
+
         try:
             # DEBUGGING
             self.ase_atoms_list = []
@@ -479,31 +479,31 @@ class uspexStructuresData():
                 atoms = read(file_name)
                 self.ase_atoms_list.append(atoms)
             """
-            self.ase_atoms_list = [read(file_name) for file_name in 
+            self.ase_atoms_list = [read(file_name) for file_name in
                                    self.get_extracted_POSCAR_file_names(self.IDs, use_initial=use_initial)]
             """
         except FileNotFoundError as e:
             self.print((f"At least on extracted POSCAR file does not exist; {e}. "
                         f"Extracting all files at once."), verb_th=2)
             self.extract_all_poscars(use_initial=use_initial)
-            self.ase_atoms_list = [read(file_name) for file_name in 
+            self.ase_atoms_list = [read(file_name) for file_name in
                                    self.get_extracted_POSCAR_file_names(self.IDs, use_initial=use_initial)]
         except Exception as e:
             raise ValueError(f"Exception found: {e}")
 
-        self.print(f'{len(self.ase_atoms_list)} ASE-Atoms list created and stored in ase_atoms_list property.', 
+        self.print(f'{len(self.ase_atoms_list)} ASE-Atoms list created and stored in ase_atoms_list property.',
                    verb_th=1)
 
-        # write structure-specific information 
+        # write structure-specific information
         if set_info:
             for index, atoms in enumerate(self.ase_atoms_list):
-                self.set_ase_atoms_info(atoms, structure_index=index, 
+                self.set_ase_atoms_info(atoms, structure_index=index,
                                         use_initial=use_initial)
-        
-        self.print('Structure-specific metadata added to info property of all ASE Atoms in ase_atoms_list.', 
+
+        self.print('Structure-specific metadata added to info property of all ASE Atoms in ase_atoms_list.',
                    verb_th=1)
 
-    def set_ase_atoms_info(self, ase_atoms, structure_index=None, 
+    def set_ase_atoms_info(self, ase_atoms, structure_index=None,
                            structure_id=None, use_initial=False):
         """
         Write structure-specific metadata information into ASE Atoms info property
@@ -520,7 +520,7 @@ class uspexStructuresData():
             raise ValueError("set either structure_index or structure_id.")
         if structure_id:
             structure_index = self.get_structure_index_from_ID(structure_id)
-        
+
         ase_atoms.info['origin'] = 'uspex'
         ase_atoms.info['uspex_run_name'] = self.uspex_run_name
         ase_atoms.info['ID'] = structure_id
@@ -534,13 +534,13 @@ class uspexStructuresData():
             ase_atoms.info['Q_entr'] = self.Q_entr[structure_index]
             ase_atoms.info['A_order'] = self.A_order[structure_index]
             ase_atoms.info['S_order'] = self.S_order[structure_index]
-        
+
         return ase_atoms
 
 
     def get_ase_atoms_from_poscar_file(self, id, use_initial=False, extract_all_poscars=True):
         # Read from file (extract if necessary)
-        file_name = self.get_extracted_POSCAR_file_name(id, use_initial=use_initial)  
+        file_name = self.get_extracted_POSCAR_file_name(id, use_initial=use_initial)
         if not os.path.exists(file_name):
             if extract_all_poscars:
                 self.extract_all_poscars(use_initial=use_initial)
@@ -568,7 +568,7 @@ class uspexStructuresData():
             - allow reading symmetrized structures from symmetrized_structures.cif file. THe parsing should be adapted in this case.
         """
         structureIDs = self.make_list_if_single_element(structureIDs)
-        
+
         if get_ase_atoms:
             selected_ase_atoms = []
             for id in structureIDs:
@@ -582,8 +582,8 @@ class uspexStructuresData():
                 else:
                     selected_ase_atoms.append(
                         self.get_ase_atoms_from_poscar_file(id, use_initial=use_initial))
- 
-            [self.ase_atoms_list[i] for i in 
+
+            [self.ase_atoms_list[i] for i in
                                   self.get_indexes_from_IDs(structureIDs)]
             return selected_ase_atoms
 
@@ -591,7 +591,7 @@ class uspexStructuresData():
             if get_ase_atoms:
                 warn('ASE Atoms will be more efficiently extracted if POSCAR files are extracted' \
                      'with extract_poscar_files')
-                return [get_ase_atoms(poscar.structure) for poscar in 
+                return [get_ase_atoms(poscar.structure) for poscar in
                         self.get_poscars_from_IDs(structureIDs)]
             else:
                 return [poscar.structure for poscar in self.get_poscars_from_IDs(structureIDs)]
@@ -603,11 +603,11 @@ class uspexStructuresData():
 
         if get_ase_atoms:
             selectedStructures = [read(fileName) for fileName in
-                                  self.get_extracted_POSCAR_file_names(structureIDs, 
+                                  self.get_extracted_POSCAR_file_names(structureIDs,
                                                                    use_initial=use_initial)]
         else:
             selectedStructures = [Structure.from_file(fileName) for fileName in
-                                  self.get_extracted_POSCAR_file_names(structureIDs, 
+                                  self.get_extracted_POSCAR_file_names(structureIDs,
                                                                        use_initial=use_initial)]
 
         return selectedStructures
@@ -618,7 +618,7 @@ class uspexStructuresData():
         """
         Create a pymatgen Structure object(s) obtained from a crystal structure prediction run with USPEX.
 
-        The structure with the requested ID will be read from the gatheredPOSCARS file (the default) 
+        The structure with the requested ID will be read from the gatheredPOSCARS file (the default)
         or alternatively from gatheredPOSCARS_order or goodStructures_POSCARS files.
 
         Args :
@@ -644,17 +644,17 @@ class uspexStructuresData():
             except ValueError as e:
                 raise ValueError('{} : poscar could not be loaded for structure ID {}'.format(
                     e, structureID))
-            
+
             return poscar.structure
         else:
             try :
                 if len(structureID) > 0 :
                     print('WARNING : structure ID has a length larger than 1. Function will return a list of structures rather than a structure')
-                    structure = self.get_structures_from_IDs(structureID, use_initial=use_initial, 
+                    structure = self.get_structures_from_IDs(structureID, use_initial=use_initial,
                                                              get_ase_atoms=get_ase_atoms)
             except TypeError :
                 # structureID is neither an array nor a list
-                structure = self.get_structures_from_IDs([structureID], use_initial=use_initial, 
+                structure = self.get_structures_from_IDs([structureID], use_initial=use_initial,
                                                          get_ase_atoms=get_ase_atoms)[0]
             return structure
 
@@ -735,7 +735,7 @@ class uspexStructuresData():
     def extract_all_poscars(self, use_initial=False):
         """
         Extract all poscars at once from approprate gathered_POSCARS file
-        
+
         :param self: Description
         :param use_initial: Description
         """
@@ -745,7 +745,7 @@ class uspexStructuresData():
         if not os.path.exists(POSCARSFile) :
             errorMsg = ('File : ',POSCARSFile,' does not exist.')
             raise ValueError(errorMsg)
-        
+
         if not os.path.exists(self.uspexStructuresDataDir) :
             os.mkdir(self.uspexStructuresDataDir)
 
@@ -754,7 +754,7 @@ class uspexStructuresData():
             os.mkdir(self.extractedPOSCARSDirectoryName)
 
         listOfExtractedPOSCARFileNames = []
-        self.print(f"Extracting individual POSCAR files from file {POSCARSFile}", 
+        self.print(f"Extracting individual POSCAR files from file {POSCARSFile}",
                    verb_th=1)
         with open(POSCARSFile, 'r') as inputFile:
             count = 0
@@ -768,23 +768,23 @@ class uspexStructuresData():
                     self.print(f'Closing file {extractedPOSCARFileName} and exiting.', verb_th=2)
                     outputFile.close()
                     break
-                    
+
                 if len(line) >= 2 and line[0:2] == 'EA' :
                     self.print("Line starts with EA", verb_th=3)
                     if extractedPOSCARFileName:
                         print('Closing file {}'.format(extractedPOSCARFileName))
                         outputFile.close()
                         listOfExtractedPOSCARFileNames.append(extractedPOSCARFileName)
-                    
+
                     currentStructID = int(line[2:].split()[0])
-                    extractedPOSCARFileName = self.get_extracted_POSCAR_file_name(currentStructID, 
+                    extractedPOSCARFileName = self.get_extracted_POSCAR_file_name(currentStructID,
                                                                                   use_initial)
                     outputFile = open(extractedPOSCARFileName, 'w')
                     self.print(f"Now writing in file {extractedPOSCARFileName}", verb_th=2)
                     outputFile.write(line)
                 else:
                     outputFile.write(line)
-                                
+
         return listOfExtractedPOSCARFileNames
 
 
@@ -1154,9 +1154,9 @@ class uspexStructuresData():
         [index],  = np.where(self.IDs == id)
         return index
 
-    def calculate_cosine_distance_matrix(self, selectedIDs=None, r=None, 
-                                         r_max=None, r_steps=None, sigma=None, 
-                                         n_jobs=None, return_plot=False, 
+    def calculate_cosine_distance_matrix(self, selectedIDs=None, r=None,
+                                         r_max=None, r_steps=None, sigma=None,
+                                         n_jobs=None, return_plot=False,
                                          show_plot=False):
         if any([sigma, r_max, r_steps, r]):
             self.set_distance_parameters(r, sigma, r_max, r_steps)
@@ -1170,15 +1170,15 @@ class uspexStructuresData():
         else:
             atoms_list = self.ase_atoms_list
 
-        outputs = self.distance_data.calculate_distance_matrix(atoms_list, structureIDs=selectedIDs, 
-                                                               n_jobs=n_jobs, return_plot=return_plot, 
+        outputs = self.distance_data.calculate_distance_matrix(atoms_list, structureIDs=selectedIDs,
+                                                               n_jobs=n_jobs, return_plot=return_plot,
                                                                show_plot=show_plot)
         print(outputs)
         if return_plot:
             (D, fig, ax) = outputs
         else:
             D = outputs
-        
+
         # Update distance_matrix
         if not selectedIDs:
             self.distance_matrix = D
@@ -1198,8 +1198,8 @@ class uspexStructuresData():
         if return_plot:
             if show_plot:
                 fig.show()
-            return fig, ax         
-        
+            return fig, ax
+
 
     def get_distance(self, ID_1, ID_2, update_distance_matrix=True):
         """
@@ -1221,7 +1221,7 @@ class uspexStructuresData():
         """
         if not self.ase_atoms_list:
             self.set_all_ase_atoms()
-        
+
         i = self.get_structure_index_from_ID(ID_1)
         j = self.get_structure_index_from_ID(ID_2)
         self.print(('Calculating distances between structures {} and {} '
@@ -1242,7 +1242,7 @@ class uspexStructuresData():
 
         return distance
 
-    
+
     def get_sorted_indexes_ids_and_energies(self, use_relative_energies=True):
         # Sort structures by enthalpy
         energies_by_atom = self.enthalpies / self.numbersOfAtoms
@@ -1251,7 +1251,7 @@ class uspexStructuresData():
         if use_relative_energies:
             sorted_energies_by_atom -= np.min(energies_by_atom)
         sorted_ids = self.IDs[sorted_indexes]
-        
+
         return sorted_indexes, sorted_ids, sorted_energies_by_atom
 
 
@@ -1268,19 +1268,19 @@ class uspexStructuresData():
 
         sorted_indexes, sorted_ids, sorted_energies_by_atom = self.get_sorted_indexes_ids_and_energies()
 
-        sorted_matrix = np.take(np.take(self.distance_matrix, sorted_indexes, axis=0), 
+        sorted_matrix = np.take(np.take(self.distance_matrix, sorted_indexes, axis=0),
                                 sorted_indexes, axis=1)
-        
+
         if return_plot:
-            fig, ax = dt.plot_distance_matrix(sorted_matrix, 
+            fig, ax = dt.plot_distance_matrix(sorted_matrix,
                                               structure_names=[str(id) for id in sorted_ids],
                                               system_name=self.uspex_run_name)
-            
+
         sorted_matrix_dict = {
-            'matrix': sorted_matrix, 
-            'sorted_indexes': sorted_indexes, 
-            'sorted_ids': sorted_ids, 
-            'sorted_energies_by_atom': sorted_energies_by_atom, 
+            'matrix': sorted_matrix,
+            'sorted_indexes': sorted_indexes,
+            'sorted_ids': sorted_ids,
+            'sorted_energies_by_atom': sorted_energies_by_atom,
         }
         if return_plot:
             sorted_matrix_dict.update({'figure': fig, 'axes': ax})
@@ -1291,13 +1291,13 @@ class uspexStructuresData():
     def is_full_distance_matrix(self):
         """ Check whether distance matrix is full or not (i.e. contains NaN terms """
         # TODO: add the possibility to test a sub-matrix
-        is_full = (isinstance(self.distance_matrix, np.ndarray) 
+        is_full = (isinstance(self.distance_matrix, np.ndarray)
                    and not np.any(np.isnan(self.distance_matrix)))
         if not is_full:
             self.print('There are missing distances in the distance matrix.', verb_th=1)
         return is_full
 
-    def get_distance_matrix_sorted_by_distance_to_ref(self, ref='best', n_jobs=1, 
+    def get_distance_matrix_sorted_by_distance_to_ref(self, ref='best', n_jobs=1,
                                                       return_plot=True):
         """
         Get a distance matrix with indexes sorted by energy
@@ -1331,19 +1331,19 @@ class uspexStructuresData():
         sorted_ids = self.IDs[sorted_indexes]
         sorted_distances_to_ref = distances_to_ref[sorted_indexes]
 
-        sorted_matrix = np.take(np.take(self.distance_matrix, sorted_indexes, axis=0), 
+        sorted_matrix = np.take(np.take(self.distance_matrix, sorted_indexes, axis=0),
                                 sorted_indexes, axis=1)
-        
+
         if return_plot:
-            fig, ax = dt.plot_distance_matrix(sorted_matrix, 
+            fig, ax = dt.plot_distance_matrix(sorted_matrix,
                                               structure_names=[str(id) for id in sorted_ids],
                                               system_name=self.uspex_run_name + ", structures sorted by dist to ref.")
-            
+
         sorted_matrix_dict = {
-            'matrix': sorted_matrix, 
-            'sorted_indexes': sorted_indexes, 
-            'sorted_ids': sorted_ids, 
-            'sorted_distances_to_ref': sorted_distances_to_ref, 
+            'matrix': sorted_matrix,
+            'sorted_indexes': sorted_indexes,
+            'sorted_ids': sorted_ids,
+            'sorted_distances_to_ref': sorted_distances_to_ref,
         }
         if return_plot:
             sorted_matrix_dict.update({'figure': fig, 'axes': ax})
@@ -1389,12 +1389,12 @@ class uspexStructuresData():
 
         # Sort structures by energy by atom
         sorted_indexes, sorted_IDs, sorted_E_rel = self.get_sorted_indexes_ids_and_energies()
-        
+
         global_distance_matrix = np.zeros((len(sorted_IDs), len(sorted_IDs)))
 
         # TODO: initialize nb_of_bins to nb_of_structures and increase until
         # the nb_of_occupied_bins is equal to nb_of_structures
-        
+
         nb_of_bins = nb_of_structures
         nb_of_occupied_bins = 0
         while 1:
@@ -1403,24 +1403,24 @@ class uspexStructuresData():
             hist, bin_edges = np.histogram(sorted_E_rel, bins=nb_of_bins)
             _ = np.digitize(sorted_E_rel, bin_edges, right=False)
             bin_indexes = np.where(_ == nb_of_bins + 1, nb_of_bins, _) - 1
-            
+
             for i, bin_pop in enumerate(hist):
                 IDs_in_bin = [ID for ID in sorted_IDs[bin_indexes == i]
                               if ID not in selected_ids]
                 if len(IDs_in_bin) > 0:
                     nb_of_occupied_bins += 1
-            
+
             if nb_of_occupied_bins >= nb_of_structures:
                 self.print(f'Splitting the energy range in {nb_of_bins} yields '
                            f'{nb_of_occupied_bins} occupied bins, matching the '
                            f'targeted number of structures.', verb_th=1)
                 break
-            
+
             self.print(f'Only {nb_of_occupied_bins} out of {nb_of_bins} contained '
                        f'structures for a target of {nb_of_structures} structures. '
                        'Incrementing the number of bins.', verb_th=2)
             nb_of_bins += 1
-            
+
         struct_index = 0
         for i, bin_pop in enumerate(hist):
             IDs_in_bin = [ID for ID in sorted_IDs[bin_indexes == i]
@@ -1505,7 +1505,7 @@ class uspexStructuresData():
                 self.print(selected_dist_matrix, verb_th=2)
 
         if show_full_distance_matrix:
-            
+
             sorted_distance_matrix = np.take(np.take(
                 self.distance_matrix, sorted_indexes, axis=0), sorted_indexes, axis=1)
             self.print('sorted_distance_matrix = \n{}'.format(sorted_distance_matrix),
@@ -1524,43 +1524,43 @@ class uspexStructuresData():
     # End of select_energy_distant_structures method
 
     def select_distant_structures(self, n_structures, initial_selection=None,
-                                  r=None, sigma=None, r_max=None, r_steps=None, 
-                                  distance_method='max_min',  
-                                  fitness_weight=0., n_jobs=None, seed=None, 
-                                  mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7, 
-                                  mds_random_state=None, 
+                                  r=None, sigma=None, r_max=None, r_steps=None,
+                                  distance_method='max_min',
+                                  fitness_weight=0., n_jobs=None, seed=None,
+                                  mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7,
+                                  mds_random_state=None,
                                   energy_plot_sizeref=0.03, energy_plot_sizemin=4, energy_plot_opacity=0.4):
         """
-        Select distant structures, possibly with an energy penalty to 
+        Select distant structures, possibly with an energy penalty to
         favor lower-energy structures
-        
-        TODO: use distanceTools.distanceMatrixData.select_distant_structures with custom 
-        initial_selection and enthalpy by atom. Make distance_matrix is stored and passed 
+
+        TODO: use distanceTools.distanceMatrixData.select_distant_structures with custom
+        initial_selection and enthalpy by atom. Make distance_matrix is stored and passed
         if existing.
 
         Args:
             n_structures: int
-                Number of structures to select. 
+                Number of structures to select.
             initial_selection: list, str or None (default is None)
-                List of preselected structure IDs or pre-selection mode, 
+                List of preselected structure IDs or pre-selection mode,
                 including:
                     * 'good_structures': the best 10 structures in goodPOSCARS
                     * 'best_structure': the best structure (according to fitness)
                     * 'lowest_energy': the lowest_energy structure
                 If None, the first structure is chosen randomly.
             distance_method: str (default is 'max_min')
-                Choose method between 'max_average' (maximize global distance to all others at each step) 
+                Choose method between 'max_average' (maximize global distance to all others at each step)
                 or "max_min" (maximize distance to closest strutcure at each step).
             fitness_weight: float (default is 0.)
-                Weight of the fitness penalty between 0 (no penalty, the default, in which 
-                case only distances matter) to 1 in which case distance will not even matter.  
+                Weight of the fitness penalty between 0 (no penalty, the default, in which
+                case only distances matter) to 1 in which case distance will not even matter.
                 (1 - w_F) * (dist_average) + w_F * (1 - ((F - F_min) / (F_max-F_min))
-                Values closer to 1 will favor good structures (i.e. stable structures if fitness 
+                Values closer to 1 will favor good structures (i.e. stable structures if fitness
                 relates to energy).
             n_jobs: int (default is 1)
                 Number of processors used to (re)calculate the full distance matrix.
             mds_plot_sizeref: float (default is 0.01)
-                Marker size (diameter) factor reflecting relative energies in the MDS plot. 
+                Marker size (diameter) factor reflecting relative energies in the MDS plot.
             mds_plot_sizemin: int (default is 3)
                 Minimum marker size (diameter) reflecting relative energies in the MDS plot.
             mds_plot_opacity: float (default is 0.7)
@@ -1576,7 +1576,7 @@ class uspexStructuresData():
             results: dict
                 dictionary containing information in the selected structures
             energy_plot_fig: plotly figure object
-                Figure of the energy plot use energy_plot_fig.update_layout() or 
+                Figure of the energy plot use energy_plot_fig.update_layout() or
                 energy_plot_fig.update_traces() to modify interactively.
             mds_plot_fig: plotly figure object
                 Figure associated with the MDS plot.
@@ -1649,7 +1649,7 @@ class uspexStructuresData():
 
         # Make sure that selected IDs exist in self.IDs
         for id in selected_ids:
-                if id not in self.IDs: 
+                if id not in self.IDs:
                     raise ValueError(f"ID {id} is not among listed IDs.")
 
         # Create sets of all, selected and remaining indexes
@@ -1659,14 +1659,14 @@ class uspexStructuresData():
 
         sorted_ids = list(self.get_IDs_sorted_by(sort_by="fitness"))
 
-        # Initialize lists in results based on selected ids 
+        # Initialize lists in results based on selected ids
         results['structure_ids'] = list(selected_ids)
         results['structure_indexes'] = list(selected_indexes)
         results['structure_indexes_by_fitness'] = [sorted_ids.index(id) for id in selected_ids]
         results['structure_rank_by_fitness'] = [i + 1 for i in results['structure_indexes_by_fitness']]
         results['distance_contributions'] = [None] * len(selected_ids)
         results['fitness_contributions'] = [None] * len(selected_ids)
-        
+
         def normalize(myarray):
             min_ar = np.min(myarray)
             max_ar = np.max(myarray)
@@ -1678,13 +1678,13 @@ class uspexStructuresData():
                 self.print(f"The target number of selected structures ({len(selected_indexes)} out "
                            f"of {n_structures}) has been reached. exiting.")
                 break
-            
+
             # Convert sets to arrays
             remaining_indexes_ar = np.array(list(remaining_indexes), dtype=int)
             selected_indexes_ar = np.array(list(selected_indexes), dtype=int)
 
             # Compute average (or min) distance to already-selected structures
-            D = np.take(np.take(self.distance_matrix, remaining_indexes_ar, axis=0), 
+            D = np.take(np.take(self.distance_matrix, remaining_indexes_ar, axis=0),
                         selected_indexes_ar, axis=1)
             if distance_method in ['maximum_average', 'max_average', 'max_av']:
                 dist_contrib = np.mean(D, axis=1)
@@ -1694,9 +1694,9 @@ class uspexStructuresData():
                 ValueError(f'{distance_method} not among allowed values.')
             # Normalize over remaining structures
             dist_contrib = normalize(dist_contrib)
-            
+
             # Calculate a fitness penalty normlized over remaining data
-            fitness_contrib = normalize(self.fitnesses[remaining_indexes_ar]) 
+            fitness_contrib = normalize(self.fitnesses[remaining_indexes_ar])
 
             # Find index maximizing average distance - fitness contribution
             # Term to maximize -> high w_F should favor low-fitness/energy structures
@@ -1704,24 +1704,24 @@ class uspexStructuresData():
             best_index = remaining_indexes_ar[best_index_in_remaining]
             best_id = self.IDs[best_index]
             index_by_fitness = sorted_ids.index(best_id) + 1 # one-based
-            results['structure_ids'].append(best_id) 
+            results['structure_ids'].append(best_id)
             results['structure_indexes'].append(best_index)
             results['structure_indexes_by_fitness'].append(index_by_fitness)
             results['structure_rank_by_fitness'].append(index_by_fitness + 1)
-            results['distance_contributions'].append(dist_contrib[best_index_in_remaining]) 
+            results['distance_contributions'].append(dist_contrib[best_index_in_remaining])
             results['fitness_contributions'].append(fitness_contrib[best_index_in_remaining])
             self.print(f"Structure ID {best_id} (index {best_index}, ranked {index_by_fitness + 1}) "
                        f"with a {dist_mthd_str} of {dist_contrib[best_index_in_remaining]:.3f} "
                        f"and a normalized fitness contribution "
-                       f"of {fitness_contrib[best_index_in_remaining]:.3f}", 
+                       f"of {fitness_contrib[best_index_in_remaining]:.3f}",
                        verb_th=2)
-            
+
             selected_indexes.add(best_index)
             remaining_indexes.remove(best_index)
 
         # Compute average (or min) distance to all selected structures
         selected_indexes_ar = np.array(list(selected_indexes), dtype=int)
-        D = np.take(np.take(self.distance_matrix, selected_indexes_ar, axis=0), 
+        D = np.take(np.take(self.distance_matrix, selected_indexes_ar, axis=0),
                     selected_indexes_ar, axis=1)
         if distance_method.lower() in ['maximum_average', 'max_average', 'max_av']:
             dist_str = 'average_dist_to_other_selected'
@@ -1754,23 +1754,23 @@ class uspexStructuresData():
                 struct_1_ranks_by_fitness.append(ranks_by_fitness[i])
                 struct_2_ranks_by_fitness.append(ranks_by_fitness[j])
 
-        energy_plot_fig = px.scatter(x=x, y=y, size=normalize(d), color=d, 
-                           labels={'x': "E - min(E) (eV/atom)", "y": "E - min(E) (eV/atom)"}, 
-                           template='simple_white', 
+        energy_plot_fig = px.scatter(x=x, y=y, size=normalize(d), color=d,
+                           labels={'x': "E - min(E) (eV/atom)", "y": "E - min(E) (eV/atom)"},
+                           template='simple_white',
                            title=(f"{self.uspex_run_name} CSP run: {len(selected_indexes)} structures "
                                   f"selected based on {dist_mthd_str}<br>"
-                                  f"with a fitness-penalty weight of {fitness_weight}."), 
-                            hover_data={"x Structure ID": struct_1_ids, 
-                                        "y Structure ID": struct_2_ids, 
-                                        "x Structure rank": struct_1_ranks_by_fitness, 
-                                        "x Structure rank": struct_2_ranks_by_fitness}) 
+                                  f"with a fitness-penalty weight of {fitness_weight}."),
+                            hover_data={"x Structure ID": struct_1_ids,
+                                        "y Structure ID": struct_2_ids,
+                                        "x Structure rank": struct_1_ranks_by_fitness,
+                                        "x Structure rank": struct_2_ranks_by_fitness})
 
-        energy_plot_fig.update_layout(xaxis=dict(constrain='domain'), 
+        energy_plot_fig.update_layout(xaxis=dict(constrain='domain'),
                             yaxis=dict(scaleanchor="x", scaleratio=1))
-        
+
         # Customize symbol size range if needed
         energy_plot_fig.update_traces(
-            marker=dict(sizemode='diameter', sizeref=energy_plot_sizeref, sizemin=energy_plot_sizemin, 
+            marker=dict(sizemode='diameter', sizeref=energy_plot_sizeref, sizemin=energy_plot_sizemin,
                         opacity=energy_plot_opacity),
             selector=dict(mode='markers')
         )
@@ -1783,7 +1783,7 @@ class uspexStructuresData():
 
         # Compute MDS
         self.print("Computing multi-dimensional scaling (MDS)...")
-        mds = MDS(n_components=2, dissimilarity='precomputed', 
+        mds = MDS(n_components=2, dissimilarity='precomputed',
                   metric=True, n_jobs=n_jobs, random_state=mds_random_state)
         coords = mds.fit_transform(self.distance_matrix)
 
@@ -1794,11 +1794,11 @@ class uspexStructuresData():
         df = DataFrame({
             'x': coords[:, 0],
             'y': coords[:, 1],
-            'ID': self.IDs, 
+            'ID': self.IDs,
             'normalized_fitness': normalize(self.fitnesses),
-            'rank_by_fitness': ranks_by_fitness, 
-            'relative_energy': relative_energies, 
-            'is_selected': ['Selected' if i in selected_indexes else 'Unselected' 
+            'rank_by_fitness': ranks_by_fitness,
+            'relative_energy': relative_energies,
+            'is_selected': ['Selected' if i in selected_indexes else 'Unselected'
                             for i in range(len(self.IDs))]
         })
 
@@ -1819,18 +1819,18 @@ class uspexStructuresData():
                    f"selected based on {dist_mthd_str}<br>"
                    f"with a fitness-penalty weight of {fitness_weight}."),
             labels={'x': 'MDS Dimension 1', 'y': 'MDS Dimension 2'},
-            hover_data=['ID', 'normalized_fitness', 'rank_by_fitness', 'relative_energy'], 
-            template='simple_white', 
+            hover_data=['ID', 'normalized_fitness', 'rank_by_fitness', 'relative_energy'],
+            template='simple_white',
             category_orders={"is_selected": category_order}
         )
 
         # Customize symbol size range if needed
         mds_plot_fig.update_traces(
-            marker=dict(sizemode='diameter', sizeref=mds_plot_sizeref, sizemin=mds_plot_sizemin, 
+            marker=dict(sizemode='diameter', sizeref=mds_plot_sizeref, sizemin=mds_plot_sizemin,
                         opacity=mds_plot_opacity),
             selector=dict(mode='markers')
         )
-        
+
         self.print("Opening plotly (via browser)...")
         mds_plot_fig.show()
 
@@ -1993,12 +1993,12 @@ class uspexStructuresData():
 
         return destination_file
 
-    def get_energy_difference_matrix(self, selected_indexes: list=None, 
-                                     selected_ids:list =None, 
+    def get_energy_difference_matrix(self, selected_indexes: list=None,
+                                     selected_ids:list =None,
                                      use_absolute_differences=False):
         """
         Docstring for plot_energy_differences_vs_distances
-        
+
         Args:
             selected_indexes: list (default is None)
                 Selected structure indexes
@@ -2006,16 +2006,16 @@ class uspexStructuresData():
                 Selected structure IDs
             use_absolute_differences: bool (default is False)
                 Whether absolute energy differences  should be computed
-                
+
         Returns:
-            energy_difference_matrix: numpy 
-                
+            energy_difference_matrix: numpy
+
         """
         if selected_indexes is None:
             if selected_ids is None:
                 selected_indexes = np.arange(len(self.IDs))
             else:
-                selected_indexes = self.get_indexes_from_IDs(selected_ids)   
+                selected_indexes = self.get_indexes_from_IDs(selected_ids)
 
         n_indexes = len(selected_indexes)
         energy_difference_matrix = np.zeros((n_indexes, n_indexes))
@@ -2028,7 +2028,7 @@ class uspexStructuresData():
                 else:
                     energy_difference_matrix[i, j] = self.enthalpies[j] / self.numbersOfAtoms[j] \
                                                      - self.enthalpies[i] / self.numbersOfAtoms[j]
-        
+
                     energy_difference_matrix[j, i] = - energy_difference_matrix[i, j]
 
         if use_absolute_differences:
@@ -2037,11 +2037,11 @@ class uspexStructuresData():
         return energy_difference_matrix
 
 
-    def plot_energy_differences_vs_distances(self, selected_indexes: list=None, 
+    def plot_energy_differences_vs_distances(self, selected_indexes: list=None,
                                              selected_ids:list =None):
         """
         Docstring for plot_energy_differences_vs_distances
-        
+
         Args:
             selected_indexes: list (default is None)
                 Selected structure indexes
@@ -2050,11 +2050,11 @@ class uspexStructuresData():
         Returns:
             fig: plotly figure
             df: pandas DataFrame
-                Dataframe containing pairwise structure indexes and ids, 
-                energy differences, etc. 
+                Dataframe containing pairwise structure indexes and ids,
+                energy differences, etc.
         """
         energy_difference_matrix = self.get_energy_difference_matrix()
-        
+
         if not self.is_full_distance_matrix():
             self.calculate_cosine_distance_matrix()
 
@@ -2062,18 +2062,18 @@ class uspexStructuresData():
             if selected_ids is None:
                 selected_indexes = np.arange(len(self.IDs))
             else:
-                selected_indexes = self.get_indexes_from_IDs(selected_ids)        
-        
+                selected_indexes = self.get_indexes_from_IDs(selected_ids)
+
         n_indexes = len(selected_indexes)
-        
+
         ranks_by_fitness = self.get_ranks_from_IDs(self.IDs[selected_indexes])
 
         flat_data = {
-            "absolute_energy_difference": [], 
-            "distance": [], 
-            "pair_indexes":[], 
-            "pair_ids": [], 
-            "pair_ranks_by_fitness": [], 
+            "absolute_energy_difference": [],
+            "distance": [],
+            "pair_indexes":[],
+            "pair_ids": [],
+            "pair_ranks_by_fitness": [],
         }
         count = 0
         for i in range(n_indexes):
@@ -2085,9 +2085,9 @@ class uspexStructuresData():
                 flat_data["pair_ranks_by_fitness"].append((ranks_by_fitness[i], ranks_by_fitness[j]))
 
         df = DataFrame(flat_data)
-        fig = px.scatter(df, x="absolute_energy_difference", y="distance", opacity=0.5, 
-                         hover_data=["pair_indexes", "pair_ids", "pair_ranks_by_fitness"], 
-                         template="simple_white", 
+        fig = px.scatter(df, x="absolute_energy_difference", y="distance", opacity=0.5,
+                         hover_data=["pair_indexes", "pair_ids", "pair_ranks_by_fitness"],
+                         template="simple_white",
                          title=f"{self.uspex_run_name} - pairwise energy differences vs distances.")
         fig.update_traces(marker={'sizemode': 'diameter', 'size': 4})
 
@@ -2096,3 +2096,4 @@ class uspexStructuresData():
         return fig, df
 
 # end of class uspexStructuresData
+
