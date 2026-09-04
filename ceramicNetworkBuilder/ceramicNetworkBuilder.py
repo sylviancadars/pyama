@@ -32,6 +32,8 @@ from pymatgen.io.vasp.inputs import Poscar
 from pymatgen import core
 from pymatgen.core.sites import Site, PeriodicSite
 from pymatgen.core.bonds import get_bond_length as pmg_get_bond_length
+from pymatgen.core.composition import Composition
+from pymatgen.core.units import FloatWithUnit
 
 from ase.visualize import view
 
@@ -311,7 +313,13 @@ class ceramicNetworkBuilderData():
     def visualize(self):
 
         if self.visualizer.lower() == 'ase':
-            ase_struct = AseAtomsAdaptor.get_atoms(self.structure)
+            # To avoid error upon conversion to ASE, one should first remove site_properties
+            # or to retain site_propertis, manually convert site_properties["connected_neihghbors"]
+            # to an atoms.info rather than an atoms.arrays
+            struct_copy = self.structure.copy()
+            for site in struct_copy.sites:
+                site.properties.pop("connected_neighbors")
+            ase_struct = AseAtomsAdaptor.get_atoms(struct_copy)
             view(ase_struct)
         if self.visualizer.lower() == 'vesta':
             self.structure.to(fmt='cif', filename='tmp.cif')
@@ -1198,6 +1206,40 @@ class ceramicNetworkBuilderData():
                 site.properties['target_coord_number'] = \
                     self.pick_coord_number_from_type(self.get_atom_type(site))
 
+    
+    
+    def get_nb_of_connected_nbrs_with_non_zero_bonding_proba(self, site_index, 
+                                                             exclude_index=None):
+        """
+        Get ratio between the number of neighbors with non-zero clustering probability
+        (based on central atom and neighbor types) and the target coordination number 
+        
+        Args:
+            exclude_index: int or None:
+                Use to avoid double-counts when exploring a second shell
+        """
+        site = self.structure.sites[site_index]
+        site_type = self.get_atom_type(site)
+        site_type_index = self.get_atom_type_index(site_type)
+        n_connected_nbrs_with_non_zero_bonding_proba = 0
+        for N_index in site.properties['connected_neighbors']:
+            if N_index == exclude_index:
+                continue
+            N_type = self.get_atom_type(self.structure.sites[N_index])
+            N_type_index = self.get_atom_type_index
+            clustering_proba = self.get_clustering_proba_from_types(
+                site_type, N_type)
+            if clustering_proba > 0:
+                n_connected_nbrs_with_non_zero_bonding_proba += 1
+
+        self.print(f"{site_type} site index {site_index} has "
+                   f"{n_connected_nbrs_with_non_zero_bonding_proba} neighbors"
+                   f"with non-zero clustering probabilty (based on types)", 
+                   verb_th=3)
+        
+        return n_connected_nbrs_with_non_zero_bonding_proba
+
+
     def pick_atom_to_relocate(self):
         """
         TOBECOMPLETED
@@ -1206,12 +1248,13 @@ class ceramicNetworkBuilderData():
         # Initialize propabilities
         p = np.ones(self.structure.num_sites)
         for site_index, site in enumerate (self.structure.sites):
-            nb_of_connected_nbrs = len(site.properties['connected_neighbors'])
+            
             target_CN = site.properties['target_coord_number']
-
+            
             # Set p to 0 if sphere is complete, highest for most-incomplete
             # spheres
-            p[site_index] *= (target_CN-nb_of_connected_nbrs) / target_CN
+            p[site_index] *= 1 - (self.get_nb_of_connected_nbrs_with_non_zero_bonding_proba(site_index) 
+                                  / target_CN)
 
             # Account for completion of nearest-neighbors coordination spheres
             # excluding the current site_index from the count
@@ -1232,8 +1275,8 @@ class ceramicNetworkBuilderData():
                     cumul_target_CN += connected_site.properties[
                         'target_coord_number'] - 1
                     # count connected neighbors excluding site_index
-                    cumul_nb_of_nbrs += len(connected_site.properties[
-                        'connected_neighbors']) - 1
+                    cumul_nb_of_nbrs += self.get_nb_of_connected_nbrs_with_non_zero_bonding_proba(
+                                            connected_site_index, exclude_index=site_index)
                 else:
                     self.print(('WARNING: in pick_atom_to_relocate: site_index'
                                 ' {} not in connected_site.connected_neighbors'
@@ -1241,7 +1284,7 @@ class ceramicNetworkBuilderData():
                                connected_site.properties['connected_neighbors']
                                ))
             if cumul_target_CN > 0:
-                p[site_index] *= (cumul_target_CN-cumul_nb_of_nbrs)/cumul_target_CN
+                p[site_index] *= 1 - (cumul_nb_of_nbrs / cumul_target_CN)
             else:
                 self.print('WARNING: cumulated target CN of neighbors is 0.',
                            verb_th=1)
@@ -1507,7 +1550,7 @@ class ceramicNetworkBuilderData():
             angle_SD = 0.0
             angle_count = 0
             # Calculate square deviation to bond angles of known nbrs M of A
-            # Use a neighbor search rather than indexes o account for
+            # Use a neighbor search rather than indexes to account for
             # periodic boundary conditions
             for M_nbr in self.structure.get_neighbors(
                     self.structure.sites[A_index],
@@ -1551,9 +1594,14 @@ class ceramicNetworkBuilderData():
                     # distance deviations
                     dist_SD += np.square((NX - NX_0) / NX_0)
                     dist_count += 1
-                    AXN_0 = self.get_bond_angle_from_CN(X_target_CN)
-                    angle_SD += np.square((AXN - AXN_0) / AXN_0)
-                    angle_count += 1
+                    
+                    if X_target_CN == 1: # No angle to consider in this case
+                        AXN_0 = None
+                    else:  
+                        AXN_0 = self.get_bond_angle_from_CN(X_target_CN)
+                        angle_SD += np.square((AXN - AXN_0) / AXN_0)
+                        angle_count += 1
+                       
                     self.print(('Bondable N neighbor {} ({}) at {} \u212B'
                                 '(vs {} \u212B) with AXN angle of {}° '
                                 '(vs {}°).').format(nbr.index,
@@ -1563,15 +1611,19 @@ class ceramicNetworkBuilderData():
                     # neighbors L of N. TAKE IMAGE OF N INTO ACCOUNT
                     N_target_CN = self.structure.sites[N_index].properties[
                         'target_coord_number']
-                    for L_nbr in self.structure.get_neighbors(
-                            self.structure.sites[N_index],
-                            self.get_max_bond_length_for_type(N_type,
-                            include_tol=True)):
+                    
+                    L_Nbrs = self.structure.get_neighbors(self.structure.sites[N_index],
+                                                          self.get_max_bond_length_for_type(N_type,
+                                                          include_tol=True))
+                    
+                    for L_nbr in L_Nbrs:
                         # Consider only connected neighbors of N, excluding X
                         # in case it was bonded to N in its former position.
+                        
                         if L_nbr.index != X_index and (L_nbr.index in
                                 self.structure.sites[N_index].properties[
                                 'connected_neighbors']):
+                            
                             # Set L coordinates relative to correct image of N
                             L = self.structure.lattice.get_cartesian_coords(
                                 L_nbr.frac_coords + N_nbr.image)
@@ -1580,9 +1632,14 @@ class ceramicNetworkBuilderData():
                             NL = np.linalg.norm(L-N)
                             XNL = 180/np.pi*np.arccos(np.dot(X-N, L-N) /
                                                       (NL*NX))
-                            XNL_0 = self.get_bond_angle_from_CN(N_target_CN)
-                            angle_SD += np.square((XNL - XNL_0) / XNL_0)
-                            angle_count += 1
+                                                      
+                            if N_target_CN == 1:  # No angle to consider in this case
+                                XNL_0 = None
+                            else:
+                                XNL_0 = self.get_bond_angle_from_CN(N_target_CN)
+                                angle_SD += np.square((XNL - XNL_0) / XNL_0)
+                                angle_count += 1
+                                
                             self.print(('XNL bond angle to connected L {} ({})'
                                         ' neighbor of N {} ({}): {:.2f}° (vs '
                                         '{}°)').format(L_index, L_type,
@@ -1982,7 +2039,6 @@ def main(seed=None, input_file='input.json', verbosity=1, abs_bond_length_tol=0.
             # It could be interesting at this point to start forcing the
             # insertion of atoms
 
-
         current_site_type = cnbd.get_type_from_index(current_site_index)
         # Set coord based on probabilities (easiest: ignore other sites)i
         current_site_CN = cnbd.pick_coord_number_from_type(current_site_type)
@@ -2013,7 +2069,6 @@ def main(seed=None, input_file='input.json', verbosity=1, abs_bond_length_tol=0.
     #     - bond angles : equal to expected values based on coordination number
     #     - min. dist between non-bonded atoms: > bond_length + (abs/rel tol)
     # ************************************************************************
-
 
     iteration_index = -1
     while 1:
@@ -2072,9 +2127,30 @@ def main(seed=None, input_file='input.json', verbosity=1, abs_bond_length_tol=0.
     # print('cnbd = ', cnbd)
     if cnbd.export_format.lower() == 'poscar':
         cnbd.export_vasp_poscar(dir_name=os.getcwd())
+    
     cnbd.visualize()
 
     plt.show()
+
+
+def get_cell_length_from_target_compo_and_density(compo: Composition, density: FloatWithUnit, default_density_unit="g cm^-3", length_unit="ang"):
+    """
+    Get cubic cell length from a pymatgen Composition and a target density 
+    """
+    if isinstance(compo, str):
+        # Get composition from formula
+        compo = Composition(compo)
+    
+    if not isinstance(density, FloatWithUnit):
+        density = FloatWithUnit(density, default_density_unit)
+    
+    volume = compo.weight / density
+    cell_length = volume ** (1/3)
+    
+    return cell_length.to("ang")
+    
+
+
 
 # Set label of the group containing the structures on which analyses should be
 # performed.
@@ -2085,16 +2161,16 @@ def main(seed=None, input_file='input.json', verbosity=1, abs_bond_length_tol=0.
 @click.option('-s', '--seed', default=None, type=int,
               help='Seed for random number generator.')
 @click.option('-i', '--input_file', default='input.json', type=str,
-              help='Input file name.')
+              help='Input file name (default: \'input.json\'.')
 @click.option('-r', '--rel_bond_length_tol', default=0.1, type=float,
               help=('Relative contact tolerance in fraction of expected bond '
-                    'length.'))
+                    'length (default: 0.1).'))
 @click.option('-m', '--max_iterations_step1', default=1000, type=int,
-              help='Maximum number of iterations for step 1.')
+              help='Maximum number of iterations for step 1 (default: 1000).')
 @click.option('-M', '--max_iterations_step2', default=500, type=int,
-              help='Maximum number of iterations for step 2.')
+              help='Maximum number of iterations for step 2 (default: 500).')
 @click.option('-a', '--max_attempts', default=10, type=int,
-              help='Maximum number of completion attempts per site.')
+              help='Maximum number of completion attempts per site (default: 10).')
 @click.option('-V', '--visualizer', default='ase', type=str,
               help='Visualizer (vesta, ase)')
 @click.option('-e', '--export_format', default='poscar', type=str,

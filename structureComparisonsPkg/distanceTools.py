@@ -306,7 +306,12 @@ class distanceMatrixData(BaseDataClass) :
                          n=len(R), sigma=self.sigma, r_cut=self.Rmax,
                          **vo_kwargs)
         tic_create_descriptor = perf_counter()
-        descriptor = vo.create(atoms, n_jobs=n_jobs)
+        try:
+            descriptor = vo.create(atoms, n_jobs=n_jobs)
+        except TypeError as e:
+            msg = f"This is a known bug of Dscribe: see fix here: https://github.com/SINGROUP/dscribe/issues/165"
+            raise TypeError(f"{e}: msg")
+        
         tac_create_descriptor = perf_counter()
 
         all_partials = np.zeros((len(types), len(types), len(R)))
@@ -411,7 +416,12 @@ class distanceMatrixData(BaseDataClass) :
                          n=len(self.R), sigma=self.sigma, r_cut=self.Rmax,
                          **vo_kwargs)
         tic_create_descriptor = perf_counter()
-        descriptor = vo.create([atoms_1, atoms_2], n_jobs=n_jobs)
+        
+        try:
+            descriptor = vo.create([atoms_1, atoms_2], n_jobs=n_jobs)
+        except TypeError as e:
+            msg = f"This is a known bug of Dscribe: see fix here: https://github.com/SINGROUP/dscribe/issues/165"
+            raise TypeError(f"{e}: msg")
 
         print(f"2-structures descriptor (features) of shape {descriptor.shape}.")
 
@@ -779,7 +789,7 @@ class distanceMatrixData(BaseDataClass) :
             selected_indexes = initial_selection
         elif isinstance(initial_selection, int):
             selected_indexes = [initial_selection]
-        elif sorting_property_values and isinstance(
+        elif sorting_property_values is not None and isinstance(
                 initial_selection, str) and initial_selection.lower() == 'best':
             selected_indexes = sorted_indexes[:1]
         elif sorting_property_values is None and isinstance(
@@ -965,10 +975,11 @@ class distanceMatrixData(BaseDataClass) :
             'is_selected': structure_selection_statuses
         })
 
-        if not description:
+        if description is None:
             description_str = ""
         else:
-            description_str += ""
+            description_str = description + " "
+            
         size_non_zero_add = 1e-6
         if sorting_property_values is not None:
             df[sorting_property_label] = sorting_property_values
@@ -1101,11 +1112,14 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
 
     # Define species
     if not species:
-        species = list(set.intersection(*[set(atoms.get_chemical_symbols()) for atoms in atoms_list]))
+        species = list(set.union(*[set(atoms.get_chemical_symbols()) for atoms in atoms_list]))
         species.sort()
-
+        
+    if verbosity >= 1:
+        print(f"Preparing ValleOganov descriptor for species {species}.")
+        
     vo = ValleOganov(species=species, function=function, sigma=sigma,
-                    n=n, r_cut=r_cut, **vo_kwargs)
+                     n=n, r_cut=r_cut, **vo_kwargs)
 
     if verbosity >= 2:
         tic = perf_counter()
@@ -1113,8 +1127,12 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
               f"atomic structures using {n_jobs} CPUs...")
 
     # Calculate descriptors
-    vo_descr_vect = vo.create(atoms_list, n_jobs=n_jobs)
-
+    try:
+        vo_descr_vect = vo.create(atoms_list, n_jobs=n_jobs)
+    except TypeError as e:
+        msg = f"This is a known bug of Dscribe: see fix here: https://github.com/SINGROUP/dscribe/issues/165"
+        raise TypeError(f"{e}: msg")
+        
     if verbosity >= 2:
         print(f"... took {perf_counter() - tic:.3f} s.")
 
@@ -1463,7 +1481,12 @@ def get_partial_from_valle_oganov_dscribe(system, type_pair, species=None,
         species.sort()
 
     vo = ValleOganov(species, function, n, sigma, r_cut, **vo_kwargs)
-    descriptor = vo.create(atoms)
+    
+    try:
+        descriptor = vo.create(atoms)
+    except TypeError as e:
+        msg = f"This is a known bug of Dscribe: see fix here: https://github.com/SINGROUP/dscribe/issues/165"
+        raise TypeError(f"{e}: msg")
 
     r = np.linspace(vo.grid["min"], vo.grid["max"], vo.grid["n"])
     rho_0 = len(atoms) / atoms.get_volume()

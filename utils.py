@@ -411,6 +411,11 @@ def visualize_clusters(structure, site_indexes, r_cut=4.0, verbosity=1):
 
         visualize_structure(cluster)
 
+        clusters['center_types'].append(site_type)
+        clusters['center_indexes'].append(site_index)
+        clusters['molecules'].append(cluster)
+
+    return clusters
 
 def get_indexes_by_type(structure_or_atoms, verbosity=0):
     """
