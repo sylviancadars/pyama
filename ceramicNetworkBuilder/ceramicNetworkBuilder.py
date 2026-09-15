@@ -63,6 +63,10 @@ __version__ = '2026.09.04_01'
 MAX_COORD_NUMBER = 4
 ANOMALOUS_DIST_THLD = 5.0
 
+# Make sure SVG-figure text objects can be manipulated with Inkscape 
+plt.rcParams['svg.fonttype'] = 'none'
+
+
 class ceramicNetworkBuilderData():
     """
     Class containing all methods and properties necessary to run ceramicNetworkBuilder
@@ -2078,12 +2082,18 @@ class ceramicNetworkBuilderData():
             coord_proba = []
             for CN, proba0 in enumerate(self.species_properties[atom_type][
                 'coord_proba']):
-                # count number of atom with CN
-                coord_proba.append(len(
-                    [i for i in site_indexes_by_type[type_index] if
-                     len(self.structure.sites[i].properties[
-                         'connected_neighbors']) == CN])
-                                   / len(site_indexes_by_type[type_index]))
+
+                n_sites = len(site_indexes_by_type[type_index])
+
+                if n_sites == 0:
+                    coord_proba.append(0.0)
+                else:
+                    # count number of atom with CN
+                    coord_proba.append(len(
+                        [i for i in site_indexes_by_type[type_index] if
+                        len(self.structure.sites[i].properties[
+                            'connected_neighbors']) == CN])
+                                    / n_sites)
             coord_proba_by_type.append(coord_proba)
 
         # Convert list of list to simple list if a single type is requested
@@ -2141,7 +2151,7 @@ class ceramicNetworkBuilderData():
         nb_of_sites_with_complete_shell_by_type = [
             self.get_nb_of_complete_sites(of_type=t) for t in
             self.system['atom_types']]
-        fractions_of_sites_with_complete_shell_by_type = [n/tot for n,tot in
+        fractions_of_sites_with_complete_shell_by_type = [n/tot if tot > 0 else 0 for n, tot in
             zip(nb_of_sites_with_complete_shell_by_type, nb_of_sites_by_type)]
 
         stat_dict = {
@@ -2213,9 +2223,48 @@ class ceramicNetworkBuilderData():
         (col, row) = (0, 1)
         width = 0.25
         x_shift = width  # /(2-1)
-        axes[col, row].bar(x-0.5*x_shift, stat_dict[
-            'fractions_of_sites_with_complete_shell_by_type'], color='r',
-            edgecolor='k',  tick_label=self.system['atom_types'])
+
+        # Load stat dicts of previous steps:
+        colors = ["lightgray", "gray"]
+
+        stat_step_files = []
+        step_labels = []
+        for step_index in [1, 2]:
+            stat_file = f"statistics_step-{step_index}.json"
+            if os.path.exists(stat_file):
+                stat_step_files.append(stat_file)
+                step_labels.append(f"After step-{step_index}")
+            else:
+                self.print(f"File {stat_file} does not exist", verb_th=3)
+
+        n_groups = len(self.system["atom_types"])
+        n_bars = len(stat_step_files) + 1
+        bar_width = 0.8 / n_bars
+        x = np.arange(n_groups)
+        x_shift = - 0.5 * n_bars * bar_width  # /(2-1)
+
+        for step_index, stat_file in enumerate(stat_step_files):
+            with open(stat_file, "r") as f:
+                stat_dict_step = json.load(f)
+                self.print(f"Statistics from step {step_index} have been loaded from file "
+                            f"{os.path.abspath(stat_file)}", verb_th=1)
+            print(f"DEBUGGING: x = {x}")
+            print(f"DEBUGGING: x_shift = {x_shift}")
+            axes[col, row].bar(x + x_shift, 
+                               stat_dict_step['fractions_of_sites_with_complete_shell_by_type'], 
+                               color=colors[step_index - 1], edgecolor='k', width=bar_width)
+            x_shift += bar_width
+    
+        print(f"DEBUGGING: x = {x}")
+        print(f"DEBUGGING: x_shift = {x_shift}")
+                    
+        axes[col, row].bar(x + x_shift, 
+                           stat_dict['fractions_of_sites_with_complete_shell_by_type'], 
+                           edgecolor='k',  tick_label=self.system['atom_types'], 
+                           width=bar_width)
+
+        axes[col, row].legend(step_labels + ['Final structure'])
+        
         axes[col, row].set_ylabel('Fraction of sites with complete shell')
         axes[col, row].set_title('Actual vs target composition, seed {}'.format(
             self.seed))
@@ -2249,6 +2298,8 @@ class ceramicNetworkBuilderData():
         # TODO: clustering_proba vs target
         (col, row) = (1, 1)
         axes[col, row].set_title('Clustering probability matrix (IN PROGRESS)')
+
+        fig.set_size_inches([9.0, 7.0])
 
         return fig
 
@@ -2313,18 +2364,30 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
         # pick first atom not-yet-treated
         # TODO: (?) if add_terminal_atoms_last is True, exclude strictly-terminal sites from sites_not_yet_treated ?
 
+        remaining_atoms_by_type = cnbd.get_remaining_atoms_by_type(as_dict=True)
+        print(f"DEBUGGING: remaining_atoms_by_type = {remaining_atoms_by_type}")
+        n_remaining_atoms = np.sum(list(remaining_atoms_by_type.values()))
+
         if add_terminal_atoms_last:
             # Strictly-terminal types should be avoided.
             strictly_terminal_types = cnbd.get_strictly_terminal_types()
 
             # Check whether structure already contains strictly-terminal types, which
             # should not be the case in phase 1.
-            site_indexes = cnbd.get_site_indexes_by_type(types=strictly_terminal_types, to_single=True)
-            if len(site_indexes):
-                cnbd.print(f"Site indexes of striclty-terminal type {strictly_terminal_types}: {site_indexes}")
+            strictly_terminal_site_indexes = cnbd.get_site_indexes_by_type(types=strictly_terminal_types, 
+                                                                           to_single=True)
+            if len(strictly_terminal_site_indexes):
+                cnbd.print(f"Site indexes of striclty-terminal type {strictly_terminal_types}: "
+                           f"{strictly_terminal_site_indexes}")
                 cnbd.print(f"Structure at iteration index {iteration_index}:\n{cnbd.structure}")
                 raise ValueError(f"Structure contains strictly-terminal atoms of types "
                                  f"{strictly_terminal_types} during step 1. This should not be the case.")
+
+            remaining_atoms_by_type = {t: n for t, n in remaining_atoms_by_type.items()
+                                       if t not in strictly_terminal_types}
+            n_remaining_atoms = np.sum(list(remaining_atoms_by_type.values()))
+
+        cnbd.print(f"The remaining number of sites is now {n_remaining_atoms}", verb_th=1)  # TODO: increase verb_th to 2
 
         sites_not_yet_treated = [index for (index, site) in enumerate(cnbd.structure.sites)
                                  if (not site.properties['is_treated']) and
@@ -2332,10 +2395,17 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
 
         cnbd.print(f"sites_not_yet_treated = {sites_not_yet_treated}.", verb_th=2)
 
+        # Throw error if the requested max_iterations_step1 (-m) is too small for the 
+        #  number of atoms to treat in step 1.
+        if n_remaining_atoms > cnbd.max_iterations_step1 - iteration_index:
+            raise ValueError(f"The number of remaining sites step 1 ({n_remaining_atoms}) "
+                             f"is too large for the remaining number of step-1 iterations "
+                             f"({cnbd.max_iterations_step1 - iteration_index}). The structure would be "
+                             f"incomplete. Pease increase max_iterations_step1 (-m option).")
+
         if len(sites_not_yet_treated):
             # Treat sites in order of creation until one type of atoms is exhausted
-            remaining_atoms = cnbd.get_remaining_atoms_by_type()
-            if min(remaining_atoms) > 0:
+            if min(list(remaining_atoms_by_type.values())) > 0:
                 current_site_index = sites_not_yet_treated[0]
             else:  # end then randomly
                 [current_site_index] = cnbd.rng.choice(sites_not_yet_treated, size=1)
@@ -2375,6 +2445,12 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
     cnbd.verbosity = verbosity
 
     cnbd.print(f"\nStructure at the end of Step 1:\n{cnbd.structure}\n", verb_th=1)
+
+    stat_dict = cnbd.get_statistics()
+    stat_file = "statistics_step-1.json"
+    with open(stat_file, "w") as f:
+        json.dump(stat_dict, f, indent=4)
+    print(f"Statistics at the end of step 1 have been stored as file {os.path.abspath(stat_file)}")
 
     cnbd.print(
         "\n"
@@ -2448,6 +2524,12 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
         cnbd.print(f"\n{100 * '*'}\nStructure at the end of step 2\n{100 * '*'}\n"
                    f"{cnbd.structure}\n{100 * '*'}\n", verb_th=1)
 
+        stat_dict = cnbd.get_statistics()
+        stat_file = "statistics_step-2.json"
+        with open(stat_file, "w") as f:
+            json.dump(stat_dict, f, indent=4)
+        print(f"Statistics at the end of step 2 have been stored as file {os.path.abspath(stat_file)}")
+
         cnbd.print(
             "\n"
             "************************************************************************\n"
@@ -2519,12 +2601,15 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
         print('Density = {:.3f} g/cm-3'.format(cnbd.structure.density))
 
     stat_dict = cnbd.get_statistics()
-    stat_file = "statistics.json"
-    with open("statistics.json", "w") as f:
+    stat_file = "statistics_final.json"
+    with open(stat_file, "w") as f:
         json.dump(stat_dict, f, indent=4)
-    print(f"Statistics have been stored as file {os.path.abspath(stat_file)}")
+    print(f"Statistics for the final structure have been stored as file {os.path.abspath(stat_file)}")
 
     fig = cnbd.plot_statistics(stat_dict=stat_dict)
+    fig.savefig("statistics_plot.svg", format="svg")
+
+    fig.savefig("statistics_plot.png", format="png")
 
     # print('cnbd = ', cnbd)
     if cnbd.export_format.lower() == 'poscar':
@@ -2550,8 +2635,6 @@ def get_cell_length_from_target_compo_and_density(compo: Composition, density: F
     cell_length = volume ** (1/3)
 
     return cell_length.to("ang")
-
-
 
 
 # Set label of the group containing the structures on which analyses should be
