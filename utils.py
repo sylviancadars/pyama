@@ -5,6 +5,7 @@ from ase import Atoms
 from pymatgen.core.structure import Structure, IStructure, Molecule, IMolecule
 from pymatgen.core.lattice import Lattice
 from pymatgen.core.trajectory import Trajectory
+from pymatgen.core.periodic_table import DummySpecies
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.units import Energy, Length, FloatWithUnit
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -448,6 +449,33 @@ def get_indexes_by_type(structure_or_atoms, verbosity=0):
         print('indexes_by_type = ', indexes_by_type)
 
     return indexes_by_type
+
+
+def get_distance_between_points_in_structure(structure, x1, x2):
+    """
+    add 2 dummy atoms in a pymatgen Structure to measure nearest distance beteen 2 points
+
+    In pymatgen, you can add two dummy atoms (e.g. X) to a Structure at the two points of interest, then calculate their distance using get_distance().
+    python
+
+    from pymatgen.core import Structure, DummySpecies
+    """
+
+    # Add two dummy atoms
+    structure.append(DummySpecies("X"), x1, coords_are_cartesian=True)
+    structure.append(DummySpecies("X"), x2, coords_are_cartesian=True)
+
+    # Get indices of the added atoms
+    i1 = len(structure) - 2
+    i2 = len(structure) - 1
+
+    # Calculate distance (with periodic boundary conditions)
+    distance = structure.get_distance(i1, i2)
+
+    # Remove dummy atoms
+    structure.remove_sites([i1, i2])
+
+    return distance
 
 
 def is_unitary_matrix(m, **kwargs):
@@ -1281,7 +1309,7 @@ def get_plausible_oxidation_states(compo_formula_or_struct,
                                    fixed_oxidation_states=None,
                                    return_species=True,
                                    return_all_best_combinations=False,
-                                   raise_error_for_uncommon_ox_states=True, 
+                                   raise_error_for_uncommon_ox_states=True,
                                    verbosity=1):
     """
     Find the most likely oxidation states of all elements for a given composition.
@@ -1337,7 +1365,7 @@ def get_plausible_oxidation_states(compo_formula_or_struct,
         if raise_error_for_uncommon_ox_states:
             raise ValueError(error_msg)
         else:
-            warn(warn_msg)
+            warn(error_msg)
 
     if len(scores) > 1 and scores[1] == scores[0]:
         warn(f'Several combinations of oxidation states were found for {formula}.')
@@ -1358,13 +1386,13 @@ def get_plausible_oxidation_states(compo_formula_or_struct,
                 if verbosity >= 3:
                     print('All combinations have been explored. Exiting while loop.')
                 break
-                
+
             if scores[i] < best_score:
                 if verbosity >= 2:
                     print(f'All {i-1} best-score ({best_score}/{nb_of_elements}) '
                           f' combinations have been considered.')
                 break
-            
+
             if verbosity >= 3:
                 print(('Considering neutral combination {} out of {} with '
                        'score {}/{}').format(i, len(neutral_combinations),
@@ -1409,9 +1437,9 @@ def get_plausible_oxidation_states(compo_formula_or_struct,
             return dict_of_names_and_ox_states
 
 
-def guess_structure_oxidation_states(structure, 
+def guess_structure_oxidation_states(structure,
                                      fixed_oxidation_states=None,
-                                     raise_error_for_uncommon_ox_states=True, 
+                                     raise_error_for_uncommon_ox_states=True,
                                      verbosity=1):
     """
     TO BE COMPLETED
@@ -1420,19 +1448,19 @@ def guess_structure_oxidation_states(structure,
     new_structure = get_pymatgen_structure(structure).copy()
     new_structure.add_oxidation_state_by_guess()
     formula = new_structure.composition.reduced_formula
-    
+
     use_pymatgen_oxi_states = True
-    
+
     if all([s.oxi_state == 0 for s in new_structure.composition.elements]):
         if verbosity >= 2:
             print('Pymatgen add_oxidation_state_by_guess method found 0 ox. states'
                   ' for all atom types in {formula} structure.')
         use_pymatgen_oxi_states = False
-    
+
     elif fixed_oxidation_states:
         for atom_type, ox_states in fixed_oxidation_states.items():
             _ox_states = [ox_states] if isinstance(ox_states, int) else ox_states
-                
+
             for site_index, species in enumerate(new_structure.species):
                 site_type = species.element.name
                 site_ox_state = species.oxi_state
@@ -1442,20 +1470,50 @@ def guess_structure_oxidation_states(structure,
                             print(f'Oxidation state of {site_type} site with index {site_index} '
                                   f'({site_ox_state}) is not  within the list of '
                                   f'fixed_oxidation_states ({ox_states})')
-                            
+
     if not use_pymatgen_oxi_states:
         if verbosity >= 2:
             print('Trying to guess oxidation states with Pyama get_plausible_oxidation_states.')
-        
-        best_combination = get_plausible_oxidation_states(new_structure, 
+
+        best_combination = get_plausible_oxidation_states(new_structure,
                                        fixed_oxidation_states=fixed_oxidation_states,
                                        return_species=True,
                                        return_all_best_combinations=False,
-                                       raise_error_for_uncommon_ox_states=raise_error_for_uncommon_ox_states, 
+                                       raise_error_for_uncommon_ox_states=raise_error_for_uncommon_ox_states,
                                        verbosity=verbosity)
-        
+
         osdt = OxidationStateDecorationTransformation({s.element.name: s.oxi_state for s in best_combination})
         new_structure = osdt.apply_transformation()
-    
+
     return new_structure
-    
+
+
+def get_shortest_cell_dimension(cell, search_range=5,
+                                return_best_indices=False, verbosity=1):
+    """
+    Get the shortest cell dimension for any shape
+    """
+
+    cell = np.array(cell, dtype=float)
+
+    shortest = np.inf
+    best_indices = None
+
+    for n, m, l in product(
+        range(-search_range, search_range + 1), repeat=3
+    ):
+        if n == 0 and m == 0 and l == 0:
+            continue
+
+        vec = n * cell[0] + m * cell[1] + l * cell[2]
+        d = np.linalg.norm(vec)
+
+        if d < shortest:
+            shortest = d
+            best_indices = (n, m, l)
+
+    if return_best_indices:
+        return shortest, best_indices
+    else:
+        return shortest
+
