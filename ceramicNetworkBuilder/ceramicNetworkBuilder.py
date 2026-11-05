@@ -39,6 +39,8 @@ from pymatgen.core.bonds import get_bond_length as pmg_get_bond_length
 from pymatgen.core.composition import Composition
 from pymatgen.core.units import FloatWithUnit
 
+from pyama.utils import get_shortest_cell_dimension, get_distance_between_points_in_structure
+
 from ase.visualize import view
 
 import numpy as np
@@ -50,6 +52,8 @@ import subprocess
 import pandas as pd
 import matplotlib.pyplot as plt
 import json
+from itertools import product
+from warnings import warn
 
 """
 import sympy as sym
@@ -63,8 +67,51 @@ __version__ = '2026.09.04_01'
 MAX_COORD_NUMBER = 4
 ANOMALOUS_DIST_THLD = 5.0
 
-# Make sure SVG-figure text objects can be manipulated with Inkscape 
+
+# Make sure SVG-figure text objects can be manipulated with Inkscape
 plt.rcParams['svg.fonttype'] = 'none'
+
+
+def get_sphere_volume(radius):
+    return 1.333333 * np.pi * radius ** 3
+
+
+def get_sphere_radius(volume):
+    return ( volume * 3/(4*np.pi) )**(1/3)
+
+
+class Void():
+    available_shapes = ["sphere"]  # TODO: add cylinder
+
+    def __init__(self, shape="sphere", position=[0, 0, 0], radius=2.0):  # TODO: add image=[0, 0, 0]
+        self.shape = shape
+        if self.shape == "sphere":
+            self.position = np.array(position)
+            self.radius = radius
+
+        # TODO: implement other
+        else:
+            raise NotImplementedError(f"Currently-implemented void shapes: {self.available_shapes}")
+
+    def get_volume(self):  # add other agruments as **vargs
+        if self.shape == "sphere":
+            return get_sphere_volume(self.radius)
+        else:
+            raise NotImplementedError(f"get_volume is not implemented for shape: {self.shape}.")
+
+    def get_radius(self):  # add other agruments as **vargs
+        if self.shape == "sphere":
+            return get_sphere_radius(self.volume)
+        else:
+            raise NotImplementedError(f"get_radius is not implemented for shape: {self.shape}.")
+
+    def __str__(self):
+        if self.shape == "sphere":
+            _str = (f"Void {self.shape}: center position {np.round(self.position, decimals=4)}, "
+                    f"r = {self.radius:.3f}")
+            return _str
+        else:
+            raise NotImplementedError(f"Currently-implemented void shapes: {self.available_shapes}.")
 
 
 class ceramicNetworkBuilderData():
@@ -113,7 +160,7 @@ class ceramicNetworkBuilderData():
             self.seed = seed
         else:
             self.seed = np.random.randint(10000)
-        
+
         # Intialize numpy random number generator (RNG) to ensure reproducibility
         if self.verbosity >= 1:
             print(('Initialization of random number generator with seed: {}'
@@ -126,6 +173,8 @@ class ceramicNetworkBuilderData():
         # self._set_species_properties_manually()
         # self._set_system_manually()
         self.input_file = input_file
+        self.print_to_file = print_to_file
+        self.print_to_console = print_to_console
         self.set_properties_and_system_from_json()
         self.set_bond_length_matrix()
         self.max_attempts = max_attempts
@@ -142,8 +191,6 @@ class ceramicNetworkBuilderData():
         self.visualizer = visualizer
         self.export_format = export_format
         self.verbosity = self.verbosity
-        self.print_to_console = print_to_console
-        self.print_to_file = print_to_file
         self._output_text = []   # list of strings to be ultimately written in file
         self.add_terminal_atoms_last = add_terminal_atoms_last
 
@@ -206,6 +253,9 @@ class ceramicNetworkBuilderData():
             file_name = self.input_file
         with open(file_name) as f:
             input_dict = json.load(f)
+
+        self.inputs_dict = input_dict
+
         if 'system' in [k.lower() for k in input_dict.keys()]:
             self.system = input_dict['system']
             if len(self.system['atom_types']) != len(self.system['nb_of_atoms_by_type']):
@@ -249,6 +299,11 @@ class ceramicNetworkBuilderData():
                                       '\'] should be of length {}').format(
                                           atom_type,
                                           len(self.system['atom_types'])))
+
+        if "exclusion_volumes" in input_dict:
+            self.print(("Exclusion volumes inputs have been detected but will be used "
+                        "after structure initialization."), verb_th=2)
+
 
         # TODO: offer the possibility to load other imput parameters from the
         # json file. commadline should take have higher priority.
@@ -313,6 +368,8 @@ class ceramicNetworkBuilderData():
             self.system['cell_angles'][0], self.system['cell_angles'][1],
             self.system['cell_angles'][2])
 
+        self.shortest_cell_dimension = get_shortest_cell_dimension(lattice.matrix)
+
         # Construct structure with first atom
         # Pick atom type randomly with probabilities according to target system compo
         nb_of_atoms_by_type = np.asarray(self.system['nb_of_atoms_by_type'])
@@ -360,17 +417,298 @@ class ceramicNetworkBuilderData():
                            verb_th=2)
                 self.structure.remove_sites([0])
 
+
+        if "exclusion_volumes" in self.inputs_dict:
+            self.read_exclusion_volumes_inputs()
+            self.set_voids_list()
+
         self.print("End of initialize_structure function.", verb_th=3)
 
+
+    def read_exclusion_volumes_inputs(self):
+        """
+        Read eclusion-volume inputs previously stored in self.inputs_dict['exclusion_volumes']
+
+        Input json file should contain a section of the sort:
+        {
+            "exclusion_volumes": {
+                "total_volume":   # or "volume_fraction",
+                "min_exclusion_volume_radius": ,
+                "max_exclusion_volume_radius": ,
+                "max_n_exclusion_volumes":
+            }
+        }
+        """
+
+        self.print("Reading exclusion volumes inputs.", verb_th=2)
+
+        exclus_vol = self.inputs_dict["exclusion_volumes"]
+        self.print(f"Input exclusion_volumes section:\n{exclus_vol}\n", verb_th=2)
+
+        if "total_volume" in exclus_vol and "volume_fraction" not in exclus_vol:
+            self.voids_total_volume = exclus_vol["total_volume"]
+            self.voids_volume_fraction = self.voids_total_volume / self.structure.volume
+            self.print(f"voids_volume_fraction property has been set from voids total_volume "
+                       f"({self.voids_total_volume} Å^3): {self.voids_volume_fraction:.4f}",
+                       verb_th=2)
+        elif "volume_fraction" in exclus_vol and "total_volume" not in exclus_vol:
+            self.voids_volume_fraction = exclus_vol["volume_fraction"]
+            self.voids_total_volume = self.structure.volume * self.voids_volume_fraction
+            self.print(f"voids_total_volume property has been set from voids_volume_fraction "
+                       f"({self.voids_volume_fraction}): {self.voids_total_volume:.3f} Å^3",
+                       verb_th=2)
+        elif "volume_fraction" in exclus_vol and "total_volume" in exclus_vol:
+            raise ValueError("total_volume and volume_fraction cannot be set together in "
+                             "exclusion_volumes section of the JSON input file.")
+        else:
+            self.voids_total_volume = 0.0
+            self.voids_volume_fraction = 0.0
+            self.print(f"voids_total_volume and voids_volume_fraction will not be used "
+                       f"have been set to 0.", verb_th=2)
+
+        if self.voids_volume_fraction >= 1:
+            raise ValueError(f"The exclusion volumes fraction ({self.voids_volume_fraction}) "
+                             f"must be less than 1.")
+
+        if self.voids_total_volume > 0 or self.voids_volume_fraction > 0:
+            if "min_exclusion_volume_radius" in exclus_vol:
+                if isinstance(exclus_vol["min_exclusion_volume_radius"], (int, float)):
+                    self.voids_min_radius = float(exclus_vol["min_exclusion_volume_radius"])
+                else:
+                    raise TypeError("min_exclusion_volume_radius should be a float (or int).")
+            else:
+                self.voids_min_radius = np.max(self.bond_length_matrix)
+                self.print((f"The minimum exclusion volume radius has been set as the "
+                            f"the maximum bond length: {self.voids_min_radius:.3f} Å"), verb_th=1)
+
+            if "max_exclusion_volume_radius" in exclus_vol:
+                if isinstance(exclus_vol["max_exclusion_volume_radius"], (int, float)):
+                    self.voids_max_radius = float(exclus_vol["max_exclusion_volume_radius"])
+                else:
+                    raise TypeError("max_exclusion_volume_radius should be a float (or int).")
+            else:
+                self.voids_max_radius = 0.5 * self.shortest_cell_dimension
+                self.print(f"The maximum exclusion volume radius has been set as 0.5 * "
+                           f"the shortest cell dimension ({self.shortest_cell_dimension:.3f} Å): "
+                           f"{self.voids_max_radius:.3f} Å", verb_th=1)
+
+            if self.voids_max_radius > 0.5 * self.shortest_cell_dimension:
+                raise ValueError(f"max_exclusion_volume_radius ({self.voids_max_radius:.3f} Å) "
+                                 f"must be less than 0.5 * the shortest cell dimension "
+                                 f"({self.shortest_cell_dimension:.3f} Å)")
+
+            if "max_n_exclusion_volumes" in exclus_vol:
+                if isinstance(exclus_vol["max_n_exclusion_volumes"], int):
+                    self.voids_n_max = exclus_vol["max_n_exclusion_volumes"]
+                else:
+                    raise TypeError("max_n_exclusion_volumes should be an int.")
+            else:
+                self.voids_n_max = 1
+                self.print(f"max_n_exclusion_volumes has been set to 1.")
+
+
+
+    def set_voids_list(self, max_attempts=1000):
+        """
+        Create a list of Void instances:
+
+        TODO: add an option for overlapping voids and implement. The difficulty lies in the
+        creation of voids to match a specified void fraction.
+        """
+        current_voids_total_volume = 0.0
+        current_remaining_voids_volume = self.voids_total_volume
+        self.voids_list = []
+
+        # TODO: adapt the following if voids other than spheres are considered
+        min_void_volume = get_sphere_volume(self.voids_min_radius)
+        self.print(f"The minimum exclusion volume is {min_void_volume:.2f} Å^3.", verb_th=1)
+
+        max_void_volume = get_sphere_volume(self.voids_max_radius)
+        self.print(f"The maximum exclusion volume is {max_void_volume:.2f} Å^3.", verb_th=1)
+
+        while current_voids_total_volume < self.voids_total_volume :
+            self.print((f"Current exclusion volume is {current_voids_total_volume:.2f} "
+                       f"Å^3 (target: {self.voids_total_volume:.2f} Å^3)."), verb_th=2)
+
+            if len(self.voids_list) >= self.voids_n_max:
+                self.print(f"The maximum number of exclusion volumes ({self.voids_n_max}) "
+                           f"has been reached.", verb_th=1)
+                break
+
+            if np.isclose(current_voids_total_volume, self.voids_total_volume):
+                self.print(f"The current total volume (current_voids_total_volume) is now "
+                           f"equal to the target ({self.voids_n_max}).", verb_th=1)
+                break
+            elif current_voids_total_volume > self.voids_total_volume:
+                # TODO: Implement a procedure to reduce current_voids_total_volume,
+                #       either by reducing the last void or all voids with
+                #       volume > min_void_volume.
+                warn(f"The total exclusion volume ({current_voids_total_volume:.2f} Å^3) "
+                     f"exceeds the target total volume ({self.voids_total_volume} Å^3). "
+                     f"This is allowed in the current implementation but may change in the future.")
+                break
+            elif current_voids_total_volume > self.voids_total_volume - min_void_volume:
+                # TODO: Implement a procedure to reduce current_voids_total_volume,
+                #       either by reducing the last void or all voids with
+                #       volume > min_void_volume.
+                warn(f"The total exclusion volume ({current_voids_total_volume:.2f} Å^3) "
+                     f"is yet lower than the target total volume ({self.voids_total_volume} Å^3), "
+                     f"but the difference is less than the minimum void volume ({min_void_volume} Å^3). "
+                     f"This is allowed in the current implementation but may change in the future.")
+                break
+
+            # Pick a volume between min_void_volume and (remaining_volume):
+            a, b, c = self.structure.lattice.lengths
+            attempts_index = 0
+            while 1:
+                attempts_index += 1
+
+                if attempts_index > max_attempts:
+                    raise ValueError(f"No additional sphere (with index {len(self.voids_list)}) "
+                                     f"could be added after {max_attempts} attemps.")
+
+
+                self.print((f"Void index {len(self.voids_list)} addition attempt "
+                            f"{attempts_index} out of {max_attempts}."), verb_th=3)
+
+                if len(self.voids_list) == self.voids_n_max - 1:
+                    try_volume = max(min_void_volume,
+                                     min(self.voids_total_volume - current_voids_total_volume,
+                                         max_void_volume))
+                    self.print(f"Last volume is fixed to the difference between "
+                               f"current_voids_total_volume ({current_voids_total_volume:.2f} Å^3) and "
+                               f"the target total volume ({self.voids_total_volume} Å^3), within the "
+                               f"limits of min and max void volumes {[min_void_volume, max_void_volume]}: "
+                               f"{try_volume}  Å^3.", verb_th=3)
+
+                elif current_voids_total_volume <= self.voids_total_volume - 2 * min_void_volume:
+                    # try_volume = (self.voids_total_volume - 2 * min_void_volume) * self.rng.random() + min_void_volume
+                    try_volume = self.rng.uniform(low=min_void_volume, high=self.voids_total_volume - min_void_volume)
+                    self.print(f"Trying a void volume ({try_volume}  Å^3) picked between min_void_volume "
+                               f"and target volume - min_void_volume ({self.voids_total_volume - min_void_volume:.2f} Å^3)",
+                               verb_th=3)
+
+                elif current_voids_total_volume <= self.voids_total_volume - min_void_volume:
+                    try_volume = min_void_volume
+                    self.print(f"The remaining volume ({current_remaining_voids_volume:.2f} Å^3) is "
+                               f"smaller than min_void_volume. Fixnig try_volume to min_void_volume: "
+                               f"{try_volume}  Å^3.", verb_th=3)
+
+                else:
+                    raise NotImplementedError(f"current_voids_total_volume = {current_voids_total_volume:.2f}")
+
+                try_radius = get_sphere_radius(try_volume)
+
+                try_position = self.structure.lattice.get_cartesian_coords(self.rng.random(size=3))
+
+                try_void = Void(shape="sphere", position=try_position, radius=try_radius)
+
+                if self.does_void_cross_another(try_void):
+                    continue
+
+                if self.is_void_over_atom(try_void):
+                    continue
+
+                self.print(f"Void {try_void} will be added to the list of exclusion volumes",
+                           verb_th=1)
+
+                self.voids_list.append(try_void)
+                # Calculate total volume for non-overlapping voids.
+                current_voids_total_volume = np.sum([void.get_volume() for void in self.voids_list])
+                current_remaining_voids_volume = self.voids_total_volume - current_voids_total_volume
+
+                break
+
+        if not np.isclose(current_voids_total_volume, self.voids_total_volume):
+
+            if current_voids_total_volume < self.voids_total_volume:
+                warn(f"The total exclusion volume ({current_voids_total_volume:.2f} Å^3) "
+                     f"is lower than the target total volume ({self.voids_total_volume} Å^3)")
+
+        self.print("List of exclusion volumes (voids_list):", verb_th=1)
+        for void in self.voids_list:
+            self.print(f"\t- {void}", verb_th=1)
+        self.print("", verb_th=1)
+
+        return self.voids_list
+
+
+    def does_void_cross_another(self, new_void:Void):
+        void_crosses_another = False
+        for void_index, void in enumerate(self.voids_list):
+            images = np.array(list(product([-1, 0, 1], repeat=3)))
+            translations = self.structure.lattice.get_cartesian_coords(images)
+            distances = np.linalg.norm(new_void.position - void.position + translations, axis=-1)
+
+            if new_void.shape == "sphere" and void.shape == "sphere":
+                if np.any(distances < new_void.radius + void.radius):
+                    self.print(f"Void {new_void} crosses void index {void_index}: {void} or "
+                               f"its periodic image",
+                               verb_th=3)
+                    return True
+
+        self.print(f"Void {new_void} does not cross any of the {len(self.voids_list)} "
+                   f"current voids.", verb_th=2)
+
+        return void_crosses_another
+
+    def is_void_over_atom(self, void:Void):
+        if void.shape == "sphere":
+            contacts = self.structure.get_sites_in_sphere(void.position, void.radius)
+            if len(contacts):
+                self.print(f"{void} overlaps with {len(contacts)} atoms.", verb_th=3)
+                return True
+            else:
+                self.print(f"{void} does not overlap with any atom.", verb_th=3)
+                return False
+
+        # Implement contact with other shapes here.
+
+    def is_in_void(self, position, return_void_and_index=False):
+        """
+        Check whether position is within an exclusion volume.
+
+        If return_void_and_index is True, the (first) matching Void instance and its index
+        in self.voids_list will be returned as well.
+
+        Args:
+            return_void_and_index: bool (default is None)
+                whether the (first) matching Void instance and its index shall be returned
+
+        Returns:
+            is_in_void: bool
+            void: Void (only if return_void_and_index is True)
+            void_index: int (only if return_void_and_index is True)
+        """
+        for void_index, void in enumerate(self.voids_list):
+            if void.shape == "sphere":
+                d = get_distance_between_points_in_structure(self.structure,
+                                                             void.position, position)
+                if d <= void.radius:
+                    self.print(f"Position {position} is in exclusion volume "
+                               f"index {void_index}: {void}.", verb_th=3)
+                    if return_void_and_index:
+                        return True, void, void_index
+                    else:
+                        return True
+            # TODO: define for lother void shapes
+
+        self.print(f"Position {position} is not in any exclusion volume.", verb_th=3)
+        if return_void_and_index:
+            return False, None, None
+        else:
+            return False
+
+
     def pick_type_from_remaining(self, skip_terminal=False):
-        """ 
-        Pick type with probabilities based on the number of remaining atoms 
-        
-        If skip_terminal, the probability to select a potentially-terminal type 
+        """
+        Pick type with probabilities based on the number of remaining atoms
+
+        If skip_terminal, the probability to select a potentially-terminal type
         will take into account the probability that the target CN is >= 2.
         """
         remaining_atoms_by_type = self.get_remaining_atoms_by_type(as_dict=True)
-        
+
         if skip_terminal:
             remaining_atoms_by_type = {t: n for t, n in remaining_atoms_by_type.items()
                                       if not self.is_strictly_terminal_type(t)}
@@ -383,24 +721,24 @@ class ceramicNetworkBuilderData():
             self.print(f"\nStructure composition is now {self.structure.composition}. There "
                        f"are no more atoms to select.", verb_th=1)
             return None
-        
+
         for type_index, atom_type in enumerate(remaining_atoms_by_type.keys()):
             if skip_terminal and self.is_potentially_terminal_type(atom_type):
                 # Take into account probabilities that CN >= 2:
-                p[type_index] *= (sum(self.species_properties[atom_type]["coord_proba"][2:]) 
+                p[type_index] *= (sum(self.species_properties[atom_type]["coord_proba"][2:])
                                   * remaining_atoms_by_type[atom_type]) / n_remaining_atoms
                 self.print(f"The probability to pick a potentiall-terminal {atom_type} atom "
-                           f"of target CN >= 2 within {n_remaining_atoms} remaining atoms is {p:.3f}", 
+                           f"of target CN >= 2 within {n_remaining_atoms} remaining atoms is {p:.3f}",
                            verb_th=2)
             else:
                 p[type_index] *= remaining_atoms_by_type[atom_type] / n_remaining_atoms
 
         p = p / np.sum(p)
-        picked_atom_type = self.rng.choice(list(remaining_atoms_by_type.keys()), 
+        picked_atom_type = self.rng.choice(list(remaining_atoms_by_type.keys()),
                                            p=p)
 
         self.print(f"Type {picked_atom_type} has been picked from remaining atoms "
-                   f"{'skipping terminal' if skip_terminal else ''}", 
+                   f"{'skipping terminal' if skip_terminal else ''}",
                    verb_th=2)
 
         return picked_atom_type
@@ -442,23 +780,23 @@ class ceramicNetworkBuilderData():
                     self.initialize_site_properties(site, skip_terminal=skip_terminal)
                     self.update_connected_neighbors(site_index)
                     site_target_CN = self.get_target_CN_from_index(site_index)
-                    
+
                     self.print(f"A new isolated site {atom_type}{site_index} with target "
                                f"coordination number {site_target_CN} has been added at "
-                               f"randomly-picked cartesian position {atom_cart_coord}.", 
+                               f"randomly-picked cartesian position {atom_cart_coord}.",
                                verb_th=1)
 
                     return site
-                
+
                 except ValueError as e:
                     self.print(f"{atom_type} atom could not be inserted at cartesian position "
-                               f"{atom_cart_coord}: {e}.", 
+                               f"{atom_cart_coord}: {e}.",
                                verb_th=3)
             else:
                 self.print(f"{atom_type} atom could not be inserted at (cartesian) "
-                           f"position {atom_cart_coord}: space is not clear.", 
+                           f"position {atom_cart_coord}: space is not clear.",
                            verb_th=3)
-        
+
 
     def visualize(self):
 
@@ -875,7 +1213,7 @@ class ceramicNetworkBuilderData():
         """
         Construct a polyhedron around selected site based on coordination number
         """
-        self.print(f'Running method build_current_site_shell on site {site_index}.', 
+        self.print(f'Running method build_current_site_shell on site {site_index}.',
                    verb_th=3)
 
         site_type = self.get_type_from_index(site_index)
@@ -903,7 +1241,7 @@ class ceramicNetworkBuilderData():
         if self.structure.sites[site_index].properties['treatment_attempts'] \
                 >= self.max_attempts:
             self.structure.sites[site_index].properties['is_treated'] = True
-            
+
             self.print(f"The maximum number of attemps ({self.max_attempts}) to complete "
                        f"the shell of site {site_type}{site_index}, currently "
                        f"{site_current_CN}/{site_target_CN} has been reached. "
@@ -941,7 +1279,7 @@ class ceramicNetworkBuilderData():
         target_CN_O = site_coord_number
 
         self.print(f"Running add_neighbor method on site {type_O}{index_O} with "
-                   f"current/target coordination number {len(nbrs)}/{target_CN_O}", 
+                   f"current/target coordination number {len(nbrs)}/{target_CN_O}",
                    verb_th=3)
 
         # Set name of new neighbour for prints
@@ -983,7 +1321,7 @@ class ceramicNetworkBuilderData():
             while 1:  # local attempts : trying different A positions withouht changing type_A
                 if local_attempts > max_local_attempts:
                     self.print(f"No position avoiding contact has been found after {local_attempts} "
-                               f"local attempts for the {new_nbr_name} neighbor of site {type_O}{index_O}.", 
+                               f"local attempts for the {new_nbr_name} neighbor of site {type_O}{index_O}.",
                                verb_th=2)
                     self.structure.sites[index_O].properties['treatment_attempts'] += 1
                     return nbrs
@@ -1020,7 +1358,7 @@ class ceramicNetworkBuilderData():
         if X_N_try is None:
             self.print(f"Exiting function add_neighbor with no {new_nbr_name} neighbor "
                        f"added to site {type_O}{index_O} with current/target CN "
-                       f"{len(nbrs)}/{target_CN_O}", 
+                       f"{len(nbrs)}/{target_CN_O}",
                        verb_th=1)  # TODO: increase ver_th to 2
             self.structure.sites[index_O].properties['treatment_attempts'] += 1
             # struct is unchanged. No need to update nbrs.
@@ -1061,9 +1399,9 @@ class ceramicNetworkBuilderData():
                 target_CN_N = self.get_target_CN_from_index(index_N)
 
                 self.print(f"Site {type_N}{index_N} has been added at cartesian position {X_N} "
-                           f" with current/target corrdination number {current_CN_N}/{target_CN_N}", 
+                           f" with current/target corrdination number {current_CN_N}/{target_CN_N}",
                            verb_th=1)
-                
+
             except ValueError as e:
                 print(('{} neighbor could not be inserted at position {}: '
                        'ValueError: {}').format(new_nbr_name, X_N_try, e))
@@ -1074,7 +1412,7 @@ class ceramicNetworkBuilderData():
         if X_N is None:
             self.print(f"Exiting function add_neighbor with no {new_nbr_name} neighbor "
                        f"added to site {type_O}{index_O} with current/target CN "
-                       f"{len(nbrs)}/{target_CN_O}", 
+                       f"{len(nbrs)}/{target_CN_O}",
                        verb_th=2)
             self.structure.sites[index_O].properties['treatment_attempts'] += 1
             # struct is unchanged. No need to update nbrs.
@@ -1083,7 +1421,7 @@ class ceramicNetworkBuilderData():
         else:
 
             self.print(f"Exiting add_neighbor method. Site {type_O}{index_O} now has "
-                       f"current/target coordination number {current_CN_O}/{target_CN_O}.", 
+                       f"current/target coordination number {current_CN_O}/{target_CN_O}.",
                        verb_th=2)
 
         self.print(f"Reaching the end of add_neighbor function. nbrs had length {len(nbrs)}", verb_th=4)
@@ -1091,9 +1429,9 @@ class ceramicNetworkBuilderData():
         self.print(f"After update, nbrs now has length {len(nbrs)}", verb_th=4)
 
         self.print(f"Method add_neighbor applied to {new_nbr_name} neighbor of site "
-                           f"{type_O}{index_O} will return nbrs of length {len(nbrs)}.", 
+                           f"{type_O}{index_O} will return nbrs of length {len(nbrs)}.",
                            verb_th=4)
-        
+
         return nbrs
 
 
@@ -1117,6 +1455,11 @@ class ceramicNetworkBuilderData():
         """
 
         is_clear = True
+
+        if self.is_in_void(tried_position):
+            self.print(f"Tried {tried_type}-atom position {tried_position} is in void.", verb_th=3)
+            return False
+
         nearby_atoms = self.structure.get_sites_in_sphere(tried_position,
             self.search_radius, include_index=True)
         if self.verbosity >= 3:
@@ -1133,7 +1476,7 @@ class ceramicNetworkBuilderData():
                     tried_type)) + self.abs_bond_length_tol
                 if nbr.nn_distance < contact_dist:
                     self.print(f"Atom {self.get_atom_type(nbr)}{nbr.index} within "
-                               f"{contact_dist} \u212B of tried position {tried_position}.", 
+                               f"{contact_dist} \u212B of tried position {tried_position}.",
                                verb_th=3)
                     is_clear = False
                     break
@@ -1215,15 +1558,15 @@ class ceramicNetworkBuilderData():
             # impose that v = OA
             result = minimize(fun, V,
                               constraints=({'type': 'eq',
-                                            'fun': lambda v: np.linalg.norm(v) - OA}), 
+                                            'fun': lambda v: np.linalg.norm(v) - OA}),
                               options={'disp': True if self.verbosity >= 3 else False})
             if result.success:
                 X_A = result.x + X_O
                 self.print(f"A cartesian position for a first neighbor to site {type_O}{index_O} "
-                           f"that maximizes distances to nearby sites has been found at {X_A}", 
+                           f"that maximizes distances to nearby sites has been found at {X_A}",
                            verb_th=2)
             else:
-                self.print('WARNING: Minimization failed. Decide what to do from here.', 
+                self.print('WARNING: Minimization failed. Decide what to do from here.',
                            verb_th=2)
 
         return X_A
@@ -1233,10 +1576,10 @@ class ceramicNetworkBuilderData():
                                       nbrs, nbr_type=None):
         """
         Find target position for the second neighbor to a selected site in the structure
-        
+
         Here O designates the central atom, A is the first neighbor, and B is the the 2nd neighbor to add.
         """
-        
+
         # Designate site of focus by O for practicity
         index_O = site_index
         X_O = self.structure.sites[index_O].coords
@@ -1246,7 +1589,7 @@ class ceramicNetworkBuilderData():
                    f"with nbrs: ", verb_th=4)
         [self.print(f"\t{nbr.species_string}{nbr.index} (image {nbr.image}) at {nbr.coords}", verb_th=4)
          for nbr in nbrs]
-        
+
         index_A = nbrs[0].index
         X_A = nbrs[0].coords
         type_A = self.get_atom_type(nbrs[0])
@@ -1265,7 +1608,7 @@ class ceramicNetworkBuilderData():
 
         self.print(f"X_A = {X_A}", verb_th=4)
         self.print(f"X_T = {X_T}", verb_th=4)
-        self.print(f"OA_vect = {OA_vect}", verb_th=4) 
+        self.print(f"OA_vect = {OA_vect}", verb_th=4)
         self.print(f"n = np.cross(X_T - X_O, OA_vect) = {n}", verb_th=4)
 
         # Calculate a, b, c, d parameters in plane equation: ax + by + cz + d = 0
@@ -1275,7 +1618,7 @@ class ceramicNetworkBuilderData():
         theta = (np.pi/180)*self.get_bond_angle_from_CN(site_coord_number)
         self.print(f"Using bond angle theta of {180*theta/np.pi:.2f} ° for coordination "
                    f"number {site_coord_number} at site {type_O}{index_O}.", verb_th=4)
-        
+
         # B is along a vector v such that v.OA = |v|*|OA|*cos(theta)
         # (x_B, y_B, z_B) = sym.symbols('x_B y_B z_B')
         OB = float(self.get_bond_length(type_B, type_O))
@@ -1296,7 +1639,7 @@ class ceramicNetworkBuilderData():
         solution, infodict, ier, msg = fsolve(equations, initial_pos, full_output=True)
         if ier != 1:
             self.print(f"find_second_neighbor_position fsolve for site {type_O}{index_O} did "
-                       f"not find a solution to add a {type_B} neighbor: {msg}", 
+                       f"not find a solution to add a {type_B} neighbor: {msg}",
                        verb_th=1)
             return None
         elif np.all(np.isclose(solution, initial_pos)):
@@ -1968,7 +2311,7 @@ class ceramicNetworkBuilderData():
         v = 2*self.rng.random(3)-1   # random vector with x, y, z within [-1,1[
         X_0 = A + self.get_bond_length(A_type, X_type)*v/np.linalg.norm(v)
 
-        self.print(f"\nStarting SLSQP minimization to relocate {X_type}{X_index} " 
+        self.print(f"\nStarting SLSQP minimization to relocate {X_type}{X_index} "
                    f" in the neighborhood of {A_type}{A_index} with:\n"
                    f"  - initial coordinates: {X_0}\n"
                    f"  - constraints: {constraints}\n"
@@ -1977,7 +2320,7 @@ class ceramicNetworkBuilderData():
 
         # MINIMIZE
         result = minimize(fun, X_0, constraints=constraints, bounds=bounds,
-                          method='SLSQP', 
+                          method='SLSQP',
                           options={'disp': True if self.verbosity >= 3 else False})
         if result.success:
             X = result.x
@@ -2250,21 +2593,21 @@ class ceramicNetworkBuilderData():
                             f"{os.path.abspath(stat_file)}", verb_th=1)
             print(f"DEBUGGING: x = {x}")
             print(f"DEBUGGING: x_shift = {x_shift}")
-            axes[col, row].bar(x + x_shift, 
-                               stat_dict_step['fractions_of_sites_with_complete_shell_by_type'], 
+            axes[col, row].bar(x + x_shift,
+                               stat_dict_step['fractions_of_sites_with_complete_shell_by_type'],
                                color=colors[step_index - 1], edgecolor='k', width=bar_width)
             x_shift += bar_width
-    
+
         print(f"DEBUGGING: x = {x}")
         print(f"DEBUGGING: x_shift = {x_shift}")
-                    
-        axes[col, row].bar(x + x_shift, 
-                           stat_dict['fractions_of_sites_with_complete_shell_by_type'], 
-                           edgecolor='k',  tick_label=self.system['atom_types'], 
+
+        axes[col, row].bar(x + x_shift,
+                           stat_dict['fractions_of_sites_with_complete_shell_by_type'],
+                           edgecolor='k',  tick_label=self.system['atom_types'],
                            width=bar_width)
 
         axes[col, row].legend(step_labels + ['Final structure'])
-        
+
         axes[col, row].set_ylabel('Fraction of sites with complete shell')
         axes[col, row].set_title('Actual vs target composition, seed {}'.format(
             self.seed))
@@ -2334,6 +2677,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
     remaining_atoms_by_type = cnbd.system['nb_of_atoms_by_type']
     nb_of_atoms_by_type = np.asarray(cnbd.system['nb_of_atoms_by_type'])
 
+    # TODO: include the possibility to incorporate a structure
     cnbd.initialize_structure(first_atom_intern_coords)
 
     cnbd.print(
@@ -2344,7 +2688,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
         " - bond lengths : equal to expected value based on atom types \n"
         " - bond angles : equal to expected values based on coordination number \n"
         " - min. dist between non-bonded atoms: > bond_length + (abs/rel tol) \n"
-        "************************************************************************", 
+        "************************************************************************",
         verb_th=0
     )
 
@@ -2358,7 +2702,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
 
         # TODO: add a stop based on number of remaining non-terminal atoms
 
-        cnbd.print(f"\nStarting Step-1 iteration number {iteration_index + 1}/{cnbd.max_iterations_step1}.", 
+        cnbd.print(f"\nStarting Step-1 iteration number {iteration_index + 1}/{cnbd.max_iterations_step1}.",
                    verb_th=1)
 
         # pick first atom not-yet-treated
@@ -2374,7 +2718,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
 
             # Check whether structure already contains strictly-terminal types, which
             # should not be the case in phase 1.
-            strictly_terminal_site_indexes = cnbd.get_site_indexes_by_type(types=strictly_terminal_types, 
+            strictly_terminal_site_indexes = cnbd.get_site_indexes_by_type(types=strictly_terminal_types,
                                                                            to_single=True)
             if len(strictly_terminal_site_indexes):
                 cnbd.print(f"Site indexes of striclty-terminal type {strictly_terminal_types}: "
@@ -2395,7 +2739,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
 
         cnbd.print(f"sites_not_yet_treated = {sites_not_yet_treated}.", verb_th=2)
 
-        # Throw error if the requested max_iterations_step1 (-m) is too small for the 
+        # Throw error if the requested max_iterations_step1 (-m) is too small for the
         #  number of atoms to treat in step 1.
         if n_remaining_atoms > cnbd.max_iterations_step1 - iteration_index:
             raise ValueError(f"The number of remaining sites step 1 ({n_remaining_atoms}) "
@@ -2428,7 +2772,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
                                                            skip_terminal=cnbd.add_terminal_atoms_last)
         cnbd.structure.sites[current_site_index].properties['target_coord_number'] = \
             current_site_target_CN
-        
+
         cnbd.print(f"Current site [{current_site_index}] : {current_site_type} with target "
                    f"coordination number {current_site_target_CN}.", verb_th=1)
 
@@ -2461,7 +2805,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
         " - bond lengths : equal to expected value based on atom types \n"
         " - bond angles : equal to expected values based on coordination number\n"
         " - min. dist between non-bonded atoms: > bond_length + (abs/rel tol) \n"
-        "************************************************************************", 
+        "************************************************************************",
         verb_th=0
     )
 
@@ -2510,7 +2854,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
                         ).format(exit_code, exit_msg), verb_th=2)
             cnbd.print(f"Atom {current_site_type}{current_site_index} with current/target "
                        f"coordination number {current_site_CN}/{current_site_target_CN} "
-                       f"could not be relocated. Trying to relocate another atom.", 
+                       f"could not be relocated. Trying to relocate another atom.",
                        verb_th=1)
 
     # Rank candidate atoms-to-move by :
@@ -2545,7 +2889,7 @@ def main(seed=None, input_file='input.json', add_terminal_atoms_last=True,
 
             # DEBUGGING:
             iteration_index += 1
-            
+
             remaining_potentially_terminal_atoms_by_type = {
                 t: n for t, n in cnbd.get_remaining_atoms_by_type(as_dict=True).items()
                 if cnbd.is_potentially_terminal_type(t)
