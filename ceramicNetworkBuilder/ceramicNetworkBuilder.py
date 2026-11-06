@@ -2993,20 +2993,36 @@ def get_corrected_cell_length_and_vol_fraction_from_cavity(ref_structure,
                                                            cavity_radius=None,
                                                            verbosity=1):
     """
-    In [7]: a_ref_400 = ref_struct_8000.lattice.a * (1 /20) ** (1/3) ; a_ref_400
-    Out[7]: 16.819071141039274
+    Get modified system characteristics when a cavity is inserted in a system
+    based on a reference structure
 
-    In [8]: vol_cavity_400 = a_ref_400 ** 3 + cavity_volume ; vol_cavity_400
-    Out[8]: 5454.708050475347
+    Should be used to set the exclusion_volumes section and cell parameters in
+    the system sections of ceramicNetworkBuilder JSON input file.
 
-    In [9]: cavity_vol_fraction = cavity_volume / vol_cavity_400 ; cavity_vol_fraction
-    Out[9]: 0.1277629874312176
+    Args:
+        ref_structure: pymatgen structure
+            The reference structure, used for its composition, volume and density
+        n_atoms: int or None (default is None)
+            Number of atoms in the target system. If None, the number of atoms
+            of the reference structure will be used.
+        cavity_volume: float or None (default is None)
+            Volume of the cavity(ies) in the target system. If None, the cavity
+            volume will be calculated from cavity_radius, assuming a spherical
+            shape.
+        cavity_radius: float or None (default is None)
+            Radius of the spherical cavity in the target system. Only used if
+            cavity_volume is None.
+        verbosity: int (default is 1)
+            Verbosity level
 
-    In [11]: a_cavity_400 = vol_cavity_400 ** (1/3) ; a_cavity_400
-    Out[11]: 17.60315461970356
-
+    Returns:
+        target_characteristics: dict
+            Calculated charcteristics of the target system with cavity.
     """
     ref_structure = get_pymatgen_structure(ref_structure)
+
+    if cavity_volume is None and cavity_radius is None:
+        raise ValueError("Define either cavity_volume or cavity_radius.")
 
     if cavity_volume is None and cavity_radius is not None:
         cavity_volume = get_sphere_volume(cavity_radius)
@@ -3034,7 +3050,7 @@ def get_corrected_cell_length_and_vol_fraction_from_cavity(ref_structure,
     target_volume = target_lattice.volume
     cavity_volume_fraction = cavity_volume / target_volume
 
-    result_dict = {
+    target_characteristics = {
         "reference_composition": ref_structure.composition,
         "reference_volume": ref_structure.volume,
         "reference_density": ref_structure.density,
@@ -3052,12 +3068,9 @@ def get_corrected_cell_length_and_vol_fraction_from_cavity(ref_structure,
     if verbosity >= 1:
         print(f"Characteristics of a target {n_atoms}-atom system with (a) cavity(ies) "
               f"of {cavity_volume} Å^3:\n")
-        [print(f"\t{k}: {v}") for k, v in result_dict.items()]
+        [print(f"\t{k}: {v}") for k, v in target_characteristics.items()]
 
-    return result_dict
-
-
-
+    return target_characteristics
 
 
 
