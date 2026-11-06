@@ -39,7 +39,9 @@ from pymatgen.core.bonds import get_bond_length as pmg_get_bond_length
 from pymatgen.core.composition import Composition
 from pymatgen.core.units import FloatWithUnit
 
-from pyama.utils import get_shortest_cell_dimension, get_distance_between_points_in_structure
+from pyama.utils import (get_shortest_cell_dimension,
+                         get_distance_between_points_in_structure,
+                         get_pymatgen_structure)
 
 from ase.visualize import view
 
@@ -2985,6 +2987,80 @@ def get_cell_length_from_target_compo_and_density(compo: Composition, density: F
     return cell_length.to("ang")
 
 
+def get_corrected_cell_length_and_vol_fraction_from_cavity(ref_structure,
+                                                           n_atoms=None,
+                                                           cavity_volume=None,
+                                                           cavity_radius=None,
+                                                           verbosity=1):
+    """
+    In [7]: a_ref_400 = ref_struct_8000.lattice.a * (1 /20) ** (1/3) ; a_ref_400
+    Out[7]: 16.819071141039274
+
+    In [8]: vol_cavity_400 = a_ref_400 ** 3 + cavity_volume ; vol_cavity_400
+    Out[8]: 5454.708050475347
+
+    In [9]: cavity_vol_fraction = cavity_volume / vol_cavity_400 ; cavity_vol_fraction
+    Out[9]: 0.1277629874312176
+
+    In [11]: a_cavity_400 = vol_cavity_400 ** (1/3) ; a_cavity_400
+    Out[11]: 17.60315461970356
+
+    """
+    ref_structure = get_pymatgen_structure(ref_structure)
+
+    if cavity_volume is None and cavity_radius is not None:
+        cavity_volume = get_sphere_volume(cavity_radius)
+
+    if cavity_radius is None:
+        cavity_radius = get_sphere_radius(cavity_volume)
+
+    if n_atoms is None:
+        n_atoms = ref_structure.num_sites
+
+    compo_ratio = n_atoms / ref_structure.num_sites
+    target_compo = ref_structure.composition * compo_ratio
+
+    # New composition cell lengrhs and volume without cavity(ies)
+    new_compo_cell_lengths = np.array(ref_structure.lattice.lengths) * (compo_ratio ** (1/3))
+    new_compo_volume = ref_structure.volume * compo_ratio
+
+    target_volume = new_compo_volume + cavity_volume
+
+    target_cell_lengths = new_compo_cell_lengths * (target_volume / new_compo_volume) ** (1/3)
+
+    target_lattice = Lattice.from_parameters(*target_cell_lengths,
+                                             *ref_structure.lattice.angles)
+
+    target_volume = target_lattice.volume
+    cavity_volume_fraction = cavity_volume / target_volume
+
+    result_dict = {
+        "reference_composition": ref_structure.composition,
+        "reference_volume": ref_structure.volume,
+        "reference_density": ref_structure.density,
+        "target_cavity_radius": cavity_radius,
+        "target_cavity_volume": cavity_volume,
+        "target_n_atoms": n_atoms,
+        "target_composition": target_compo,
+        "target_volume": target_volume,
+        "target_cell_lengths": target_lattice.lengths,
+        "target_cell_angles": target_lattice.angles,
+        "target_cavity_volume_fraction": cavity_volume_fraction,
+
+    }
+
+    if verbosity >= 1:
+        print(f"Characteristics of a target {n_atoms}-atom system with (a) cavity(ies) "
+              f"of {cavity_volume} Å^3:\n")
+        [print(f"\t{k}: {v}") for k, v in result_dict.items()]
+
+    return result_dict
+
+
+
+
+
+
 # Set label of the group containing the structures on which analyses should be
 # performed.
 # TODO: insert a density option to set density in g/cm-3 to a specifed value
@@ -3051,6 +3127,8 @@ def cli(seed, input_file, add_terminal_atoms_last, rel_bond_length_tol,
     if verbosity >= 1:
         print('Running script {}'.format(os.path.basename(__file__)))
 
+    first_atom_intern_coords = [0.0, 0.0, 0.0]
+
     main(seed=seed, input_file=input_file,
          add_terminal_atoms_last=add_terminal_atoms_last,
          rel_bond_length_tol=rel_bond_length_tol,
@@ -3059,7 +3137,9 @@ def cli(seed, input_file, add_terminal_atoms_last, rel_bond_length_tol,
          max_iterations_step3=max_iterations_step3,
          max_attempts=max_attempts,
          visualizer=visualizer.lower(),
-         export_format=export_format, verbosity=verbosity)
+         export_format=export_format,
+         first_atom_intern_coords=first_atom_intern_coords,
+         verbosity=verbosity)
 
 
 if __name__ == '__main__':
