@@ -175,6 +175,7 @@ class ceramicNetworkBuilderData():
         self.input_file = input_file
         self.print_to_file = print_to_file
         self.print_to_console = print_to_console
+        self.voids_list = None
         self.set_properties_and_system_from_json()
         self.set_bond_length_matrix()
         self.max_attempts = max_attempts
@@ -680,6 +681,9 @@ class ceramicNetworkBuilderData():
             void: Void (only if return_void_and_index is True)
             void_index: int (only if return_void_and_index is True)
         """
+        if self.voids_list is None:
+            return False
+
         for void_index, void in enumerate(self.voids_list):
             if void.shape == "sphere":
                 d = get_distance_between_points_in_structure(self.structure,
@@ -1456,7 +1460,7 @@ class ceramicNetworkBuilderData():
 
         is_clear = True
 
-        if self.is_in_void(tried_position):
+        if self.voids_list is not None and self.is_in_void(tried_position):
             self.print(f"Tried {tried_type}-atom position {tried_position} is in void.", verb_th=3)
             return False
 
