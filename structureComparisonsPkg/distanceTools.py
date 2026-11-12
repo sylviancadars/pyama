@@ -954,6 +954,12 @@ class distanceMatrixData(BaseDataClass) :
         self.print("Computing multi-dimensional scaling (MDS)...")
         mds = MDS(n_components=2, dissimilarity='precomputed',
                   metric=True, n_jobs=n_jobs, random_state=mds_random_state)
+        
+        # DEBUGGING
+        if np.any(np.isnan(self.Dmatrix)):
+            print("Dmatrix has nan values:")
+            print(np.where(np.isnan(self.Dmatrix)))
+
         coords = mds.fit_transform(self.Dmatrix)
 
         structure_selection_statuses = []
@@ -1024,6 +1030,10 @@ class distanceMatrixData(BaseDataClass) :
             marker=marker_dict,
             selector=dict(mode='markers')
         )
+
+        mds_plot_fig.update_layout(xaxis=dict(constrain='domain'),
+                                   yaxis=dict(scaleanchor="x", scaleratio=1))
+        
 
         self.print("Opening plotly (via browser)...")
         mds_plot_fig.show()
