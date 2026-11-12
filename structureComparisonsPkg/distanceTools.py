@@ -668,8 +668,8 @@ class distanceMatrixData(BaseDataClass) :
                                   sorting_property_label='property',
                                   n_jobs=None, seed=None,
                                   mds_plot_sizeref=0.03, mds_plot_sizemin=2, mds_plot_opacity=0.7,
-                                  mds_plot_fixed_size=10, mds_plot_font_size=14, 
-                                  mds_plot_fig_width=600, mds_plot_fig_height=500,                                    
+                                  mds_plot_fixed_size=10, mds_plot_font_size=14,
+                                  mds_plot_fig_width=600, mds_plot_fig_height=500,
                                   mds_random_state=None,
                                   show_plot=True, description=None):
         """
@@ -960,6 +960,12 @@ class distanceMatrixData(BaseDataClass) :
         self.print("Computing multi-dimensional scaling (MDS)...")
         mds = MDS(n_components=2, dissimilarity='precomputed',
                   metric=True, n_jobs=n_jobs, random_state=mds_random_state)
+
+        # DEBUGGING
+        if np.any(np.isnan(self.Dmatrix)):
+            print("Dmatrix has nan values:")
+            print(np.where(np.isnan(self.Dmatrix)))
+
         coords = mds.fit_transform(self.Dmatrix)
 
         structure_selection_statuses = []
@@ -1024,8 +1030,8 @@ class distanceMatrixData(BaseDataClass) :
             labels={'x': 'MDS Dimension 1', 'y': 'MDS Dimension 2'},
             hover_data=hover_data,
             template='simple_white',
-            category_orders={"is_selected": category_order}, 
-            color_discrete_sequence=colors, 
+            category_orders={"is_selected": category_order},
+            color_discrete_sequence=colors,
             symbol_sequence=markers
         )
 
@@ -1059,6 +1065,8 @@ class distanceMatrixData(BaseDataClass) :
             )
         )
 
+        mds_plot_fig.update_layout(xaxis=dict(constrain='domain'),
+                                   yaxis=dict(scaleanchor="x", scaleratio=1))
 
         if show_plot:
             self.print("Opening plotly (via browser)...")

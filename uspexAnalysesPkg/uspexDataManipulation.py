@@ -1523,11 +1523,151 @@ class uspexStructuresData():
             return selected_ids, seed
     # End of select_energy_distant_structures method
 
-    def select_distant_structures(self, n_structures, initial_selection=None,
-                                  r=None, sigma=None, r_max=None, r_steps=None,
-                                  distance_method='max_min',
+    def select_distant_structures(self, n_structures, 
+                                  fitness_weight=0.9, 
+                                  initial_selection='best_structure', 
+                                  distance_threshold=0.01, 
+                                  distance_method='max_min', 
+                                  structure_descriptions=None, 
+                                  sorting_order='ascending', 
+                                  sorting_property_label='fitness', 
+                                  n_jobs=None, 
+                                  seed=None, 
+                                  mds_plot_sizeref=0.01, 
+                                  mds_plot_sizemin=3, 
+                                  mds_plot_opacity=0.7, 
+                                  mds_plot_fixed_size=10, 
+                                  mds_random_state=54321, 
+                                  description= None, 
+                                  energy_plot_sizeref=0.03, 
+                                  energy_plot_sizemin=4, 
+                                  energy_plot_opacity=0.4):
+        """
+        TO BE COMPLETED
+        """
+        # Process initial_selection:
+        #   str: 'good_structures', 'best_structure', lowest_energy_structure'
+        #   list of IDs (rather than indexes)
+        if isinstance(initial_selection, (list, tuple, np.ndarray)):
+            selected_ids = initial_selection
+        elif isinstance(initial_selection, int):
+            selected_ids = [initial_selection]
+        elif isinstance(initial_selection, str):
+            good = ['good', 'good_structures', 'good structures']
+            best = ['best', 'best_structure', 'best structure']
+            lowest_E = ['lowest-e', 'lowest_energy', 'lowest-energy', 'lowest energy']
+            allowed_initial_selections = good + best + lowest_E
+            if initial_selection.lower() in good:
+                selected_ids = self.get_good_structures_ids()
+            elif initial_selection.lower() in best:
+                selected_ids = [self.get_good_structures_ids()[0]]
+            elif initial_selection.lower() in lowest_E:
+                selected_ids = [self.get_IDs_sorted_by(sort_by='enthalpy')[0]]
+            else:
+                raise ValueError(f"Allowed initial_selection string values are (case unsensitive) "
+                                 f"{allowed_initial_selections}.")
+        elif not initial_selection:
+            # Initialize sequence, save seed in results
+            ssq = np.random.SeedSequence(seed)
+            rng = np.random.default_rng(ssq)
+            seed = ssq.entropy
+            print('Random number generation:\nSeed = {}'.format(seed))
+            # Make sure seed is returned
+            results['seed'] = seed
+            # Randomly pick one ID
+            selected_ids = [rng.choice(self.IDs)]
+        else:
+            raise TypeError(f"initial_selection of type {type(initial_selection)} rather than "
+                            f"allowed list, tuple, numpy ndarray, int or str types.")
+
+        ranks_by_fitness = self.get_ranks_from_IDs(self.IDs, one_based=True)
+
+        results, mds_plot_fig = self.distance_data.select_distant_structures(
+            self.ase_atoms_list, n_structures, 
+            initial_selection=self.get_indexes_from_IDs(selected_ids), 
+            distance_threshold=distance_threshold, 
+            distance_method=distance_method, 
+            structure_ids=self.IDs, 
+            structure_descriptions=[f"Structure ID {ID} (rank {r + 1}/{self.nbOfStructures})" 
+                                    for ID, r in zip(self.IDs, ranks_by_fitness)], 
+            sorting_property_values=self.fitnesses, 
+            sorting_property_weight=fitness_weight, 
+            sorting_order=sorting_order, 
+            sorting_property_label='fitness', 
+            n_jobs=n_jobs, seed=seed, 
+            mds_plot_sizeref=mds_plot_sizeref, 
+            mds_plot_sizemin=mds_plot_sizemin, 
+            mds_plot_opacity=mds_plot_opacity, 
+            mds_plot_fixed_size=mds_plot_fixed_size, 
+            mds_random_state=mds_random_state, 
+            description=description)
+
+        results['fitness_weight'] = fitness_weight
+
+        # store relative energies per atom of selected structures in results
+        E_rel = self.enthalpies / self.numbersOfAtoms
+        E_rel = E_rel - np.min(E_rel)
+        selected_indexes_ar = np.array(list(results['structure_indexes']), dtype=int)
+        results['relative_energies_per_atom'] = E_rel[selected_indexes_ar].tolist()
+
+        d = []
+        x = []
+        y = []
+        struct_1_ids = []
+        struct_2_ids = []
+        struct_1_ranks_by_fitness = []
+        struct_2_ranks_by_fitness = []
+        for i in selected_indexes_ar:
+            for j in selected_indexes_ar:
+                d.append(self.distance_data.Dmatrix[i, j])
+                x.append(E_rel[i])
+                y.append(E_rel[j])
+                struct_1_ids.append(self.IDs[i])
+                struct_2_ids.append(self.IDs[j])
+                struct_1_ranks_by_fitness.append(ranks_by_fitness[i])
+                struct_2_ranks_by_fitness.append(ranks_by_fitness[j])
+
+        if distance_method in ['maximum_average', 'max_average', 'max_av']:
+            dist_mthd_str = 'maximum average distance to all picked structures'
+        elif distance_method in ['maximum_minimum', 'maxmin', 'max_min']:
+            dist_mthd_str = 'maximum distance to closest picked structure'
+        else:
+            ValueError(f'{distance_method} not among allowed values (e.g. max_av)')
+
+        energy_plot_fig = px.scatter(x=x, y=y, size=normalize(d), color=d,
+                           labels={'x': "E - min(E) (eV/atom)", "y": "E - min(E) (eV/atom)"},
+                           template='simple_white',
+                           title=(f"{self.uspex_run_name} CSP run: {len(results['structure_indexes'])} structures "
+                                  f"selected based on {dist_mthd_str}<br>"
+                                  f"with a fitness-penalty weight of {fitness_weight}."),
+                            hover_data={"x Structure ID": struct_1_ids,
+                                        "y Structure ID": struct_2_ids,
+                                        "x Structure rank": struct_1_ranks_by_fitness,
+                                        "x Structure rank": struct_2_ranks_by_fitness})
+
+        energy_plot_fig.update_layout(xaxis=dict(constrain='domain'),
+                            yaxis=dict(scaleanchor="x", scaleratio=1))
+
+        # Customize symbol size range if needed
+        energy_plot_fig.update_traces(
+            marker=dict(sizemode='diameter', sizeref=energy_plot_sizeref, sizemin=energy_plot_sizemin,
+                        opacity=energy_plot_opacity),
+            selector=dict(mode='markers')
+        )
+        energy_plot_fig.show()
+
+        results_df = DataFrame(results)
+        if self.verbosity >= 1:
+            print(f"distance-based structure selection is done:\n{results_df}")
+
+        return results, energy_plot_fig, mds_plot_fig
+
+
+    def select_distant_structures_old(self, n_structures, initial_selection=None,
+                                      r=None, sigma=None, r_max=None, r_steps=None,
+                                      distance_method='max_min',
                                   fitness_weight=0., n_jobs=None, seed=None,
-                                  mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7,
+                                  mds_plot_sizeref=0.005, mds_plot_sizemin=4, mds_plot_opacity=0.7,
                                   mds_random_state=None,
                                   energy_plot_sizeref=0.03, energy_plot_sizemin=4, energy_plot_opacity=0.4):
         """
@@ -2096,4 +2236,10 @@ class uspexStructuresData():
         return fig, df
 
 # end of class uspexStructuresData
+
+def normalize(myarray):
+    min_ar = np.min(myarray)
+    max_ar = np.max(myarray)
+    normalized_array = (myarray - min_ar) / (max_ar - min_ar)
+    return normalized_array
 
