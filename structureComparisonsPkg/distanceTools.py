@@ -311,7 +311,7 @@ class distanceMatrixData(BaseDataClass) :
         except TypeError as e:
             msg = f"This is a known bug of Dscribe: see fix here: https://github.com/SINGROUP/dscribe/issues/165"
             raise TypeError(f"{e}: msg")
-        
+
         tac_create_descriptor = perf_counter()
 
         all_partials = np.zeros((len(types), len(types), len(R)))
@@ -416,7 +416,7 @@ class distanceMatrixData(BaseDataClass) :
                          n=len(self.R), sigma=self.sigma, r_cut=self.Rmax,
                          **vo_kwargs)
         tic_create_descriptor = perf_counter()
-        
+
         try:
             descriptor = vo.create([atoms_1, atoms_2], n_jobs=n_jobs)
         except TypeError as e:
@@ -667,9 +667,11 @@ class distanceMatrixData(BaseDataClass) :
                                   sorting_order='ascending',
                                   sorting_property_label='property',
                                   n_jobs=None, seed=None,
-                                  mds_plot_sizeref=0.01, mds_plot_sizemin=3, mds_plot_opacity=0.7,
-                                  mds_plot_fixed_size=10,mds_random_state=None,
-                                  description=None):
+                                  mds_plot_sizeref=0.03, mds_plot_sizemin=2, mds_plot_opacity=0.7,
+                                  mds_plot_fixed_size=10, mds_plot_font_size=14, 
+                                  mds_plot_fig_width=600, mds_plot_fig_height=500,                                    
+                                  mds_random_state=None,
+                                  show_plot=True, description=None):
         """
         Select distant structures, possibly with a penalty associated with a property
 
@@ -739,6 +741,8 @@ class distanceMatrixData(BaseDataClass) :
             mds_random_state: int or None
                 Interger number to ensure reproducibility of the MDS plot. If None the
                 random state is chosen automatically.
+            show_plot: bool (default is True)
+                Whether the plotly MDS plot should be opened (e.g. via brouwser)
             description: str or None (default is None)
                 description of the considered set, used in the MDS plot title.
 
@@ -861,6 +865,7 @@ class distanceMatrixData(BaseDataClass) :
             if not len(remaining_indexes):
                 self.print(f"Theere are no remaining structure. Exiting while loop with only "
                            f"{len(selected_indexes)} structures selected.")
+                break
 
             # Convert sets to arrays
             remaining_indexes_ar = np.array(list(remaining_indexes), dtype=int)
@@ -875,6 +880,7 @@ class distanceMatrixData(BaseDataClass) :
                 dist_contrib = np.min(D, axis=1)
             else:
                 ValueError(f'{distance_method} not among allowed values.')
+
             # Normalize over remaining structures
             dist_contrib = normalize(dist_contrib)
 
@@ -979,7 +985,7 @@ class distanceMatrixData(BaseDataClass) :
             description_str = ""
         else:
             description_str = description + " "
-            
+
         size_non_zero_add = 1e-6
         if sorting_property_values is not None:
             df[sorting_property_label] = sorting_property_values
@@ -1003,6 +1009,8 @@ class distanceMatrixData(BaseDataClass) :
 
         # Enforce cnostant ordering of symbol and colr sequence based on is_selected
         category_order = ["unselected", "discarded", "selected"]
+        colors = ["firebrick", "darkorange", "forestgreen"]
+        markers = ["x", "cross", "circle"]
 
         # Plot with Plotly Express
         mds_plot_fig = px.scatter(
@@ -1016,7 +1024,9 @@ class distanceMatrixData(BaseDataClass) :
             labels={'x': 'MDS Dimension 1', 'y': 'MDS Dimension 2'},
             hover_data=hover_data,
             template='simple_white',
-            category_orders={"is_selected": category_order}
+            category_orders={"is_selected": category_order}, 
+            color_discrete_sequence=colors, 
+            symbol_sequence=markers
         )
 
         # Customize symbol size range if needed
@@ -1025,10 +1035,34 @@ class distanceMatrixData(BaseDataClass) :
             selector=dict(mode='markers')
         )
 
-        self.print("Opening plotly (via browser)...")
-        mds_plot_fig.show()
+        mds_plot_fig.update_layout(
+            template="simple_white", width=mds_plot_fig_width, height=mds_plot_fig_height,
+            font=dict(family="arial", size=mds_plot_font_size),
+            xaxis=dict(
+                showline=True,
+                linewidth=1,
+                linecolor="black",
+                mirror=True,
+                title_font=dict(family="arial", size=mds_plot_font_size),
+                tickfont=dict(family="arial", size=mds_plot_font_size),
+            ),
+            yaxis=dict(
+                showline=True,
+                linewidth=1,
+                linecolor="black",
+                mirror=True,
+                title_font=dict(family="arial", size=mds_plot_font_size),
+                tickfont=dict(family="arial", size=mds_plot_font_size)
+            ),
+            legend=dict(
+                font=dict(family="arial", size=mds_plot_font_size)
+            )
+        )
 
-        df.to_csv('tmp.csv')
+
+        if show_plot:
+            self.print("Opening plotly (via browser)...")
+            mds_plot_fig.show()
 
         return results, mds_plot_fig
 
@@ -1114,10 +1148,10 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
     if not species:
         species = list(set.union(*[set(atoms.get_chemical_symbols()) for atoms in atoms_list]))
         species.sort()
-        
+
     if verbosity >= 1:
         print(f"Preparing ValleOganov descriptor for species {species}.")
-        
+
     vo = ValleOganov(species=species, function=function, sigma=sigma,
                      n=n, r_cut=r_cut, **vo_kwargs)
 
@@ -1132,7 +1166,7 @@ def get_distance_matrix_from_valle_oganov_dscribe(structures, species=None,
     except TypeError as e:
         msg = f"This is a known bug of Dscribe: see fix here: https://github.com/SINGROUP/dscribe/issues/165"
         raise TypeError(f"{e}: msg")
-        
+
     if verbosity >= 2:
         print(f"... took {perf_counter() - tic:.3f} s.")
 
@@ -1481,7 +1515,7 @@ def get_partial_from_valle_oganov_dscribe(system, type_pair, species=None,
         species.sort()
 
     vo = ValleOganov(species, function, n, sigma, r_cut, **vo_kwargs)
-    
+
     try:
         descriptor = vo.create(atoms)
     except TypeError as e:
