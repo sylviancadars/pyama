@@ -196,9 +196,10 @@ def get_iso_nmr_spectrum(structure_or_file, atom_type,
                          nmr_tensors=None, nmr_tensors_key=None,
                          are_irreps_decomposed_tensors=True,
                          frequencies=None, steps=1024,
-                         fwhm=1.0, eta=0.5, sigma_to_delta=None, 
-                         optimize_smoothening=False, 
-                         expt_data=None, 
+                         fwhm=1.0, eta=0.5, sigma_to_delta=None,
+                         optimize_smoothening=False,
+                         fwhm_bounds=None, eta_bounds=None,
+                         expt_data=None,
                          verbosity=1):
     """
     Get isotropic NMR spectrum with braodeing from a structure containing (or a separate array of) NMR tensors
@@ -267,7 +268,7 @@ def get_iso_nmr_spectrum(structure_or_file, atom_type,
         # TODO: read
         if expt_data is None:
             raise ValueError("Experimental data must be provided to optimize smoothening.")
-        
+
         expt_data = np.array(expt_data)
 
         if expt_data.shape[0] != 2:
@@ -280,45 +281,45 @@ def get_iso_nmr_spectrum(structure_or_file, atom_type,
         print("Number of spectrum data points were read from experiment.")
 
         # Calculate initial spectrum to set initial amplitude
-        
+
         eta_0 = float(eta)
         fwhm_0 = float(fwhm)
         _, y = add_smoothing_lorentzo_gaussian(nmr_iso, fwhm=fwhm_0, eta=eta_0,
                                                frequencies=frequencies, normalize=False)
-        amp_0 = expt_data[1].max() / y.max() 
-        
+        amp_0 = expt_data[1].max() / y.max()
+
         if verbosity >= 1:
             print(f'Initial smoothening parameters (amp, fwhm, eta) = {(amp_0, fwhm_0, eta_0)}.')
 
         opt_step = 0
-        
-        def f(variables):  
+
+        def f(variables):
             amp, fwhm, eta = variables
-            
+
             _, y = add_smoothing_lorentzo_gaussian(nmr_iso, fwhm=fwhm, eta=eta,
-                                                   frequencies=frequencies, 
+                                                   frequencies=frequencies,
                                                    normalize=False)
             rmsd = np.sqrt(np.mean(np.square((amp * y - expt_data[1]))))
 
             if verbosity >= 2:
                 print(f"Optimization in progress. (amp, fwhm, eta) = {variables}.")
                 print(f"rmsd = {rmsd:.4f}")
-            
+
             # opt_step += 1
             return rmsd
 
         bounds = np.array([
-            np.array([0.1, 10.0]) * amp_0, 
-            [0.01, freq_range], 
-            [0.0, 1.0] 
+            np.array([0.1, 10.0]) * amp_0,
+            [0.01, freq_range] if fwhm_bounds is None else fwhm_bounds,
+            [0.0, 1.0] if eta_bounds is None else eta_bounds
         ])
 
         if verbosity >= 2:
             print(f"bounds = {bounds}")
 
-        opt_result = minimize(f, np.array([amp_0, fwhm_0, eta_0]), 
+        opt_result = minimize(f, np.array([amp_0, fwhm_0, eta_0]),
                               bounds=bounds)
-        
+
         if verbosity >= 1:
             print('Result of the NMR-smoothening optimization:')
             print(f'\t(amp, fwhm, eta)_opt = {opt_result.x}\n\tsuccess: {opt_result.success}')
